@@ -22,7 +22,6 @@ openai_api_key = os.environ.get("OPENAI_API_KEY")
 if not openai_api_key:
     raise RuntimeError("OPENAI_API_KEY not set in environment or .env file")
 client = OpenAI(api_key=openai_api_key)
-
 # Load index + chunk text with error handling
 try:
     if not os.path.exists("magazine_index.faiss"):
