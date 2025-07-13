@@ -1,5 +1,7 @@
+
 Flask
 openai>=1.0.0
 faiss-cpu
 PyMuPDF
 numpy
+python-dotenv

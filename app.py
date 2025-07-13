@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from openai import OpenAI
+from dotenv import load_dotenv
 import faiss
 import numpy as np
 import pickle
@@ -14,7 +15,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-client = OpenAI(api_key="***REMOVED***r7VvbN12QDVXOvbkN-gStg-dpziRIEGqQvBX8Nok-4TwM-dwfT_njKORwWQthr_nrxoV-t9jSjT3BlbkFJvSoTeCX-N7cuMT0tTeGtIO9qtTpEkfsXISsZ0pdgvt3E0dYlqJjIAAw92JSpNzLnlWId6-qv8A")
+
+# Load environment variables from .env
+load_dotenv()
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+if not openai_api_key:
+    raise RuntimeError("OPENAI_API_KEY not set in environment or .env file")
+client = OpenAI(api_key=openai_api_key)
 
 # Load index + chunk text with error handling
 try:

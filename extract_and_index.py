@@ -1,5 +1,6 @@
 import fitz  # PyMuPDF
 from openai import OpenAI
+from dotenv import load_dotenv
 import faiss
 import os
 import pickle
@@ -20,7 +21,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-client = OpenAI(api_key="***REMOVED***Iwn1mGQ0GuiEpenEsC7WeFYoYUxX6Td6-CoDkLQNEu0X2oXyN0vGNHlCwblROhPw42iHWRmEU6T3BlbkFJoMyiQifAM6HQ2WRo82qoCelwn7ynpYaRtq8EAKHaIrZN8Snx3HdTEG89YCSdYTyZhQ1zuiE-EA")
+# Load environment variables from .env
+load_dotenv()
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+if not openai_api_key:
+    raise RuntimeError("OPENAI_API_KEY not set in environment or .env file")
+client = OpenAI(api_key=openai_api_key)
 
 def clean_single_chunk(chunk_data):
     """Clean a single chunk - designed for parallel processing"""
