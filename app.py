@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+import streamlit as st
 from openai import OpenAI
 from dotenv import load_dotenv
 import faiss
@@ -14,45 +14,31 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+# Streamlit does not use Flask app objects
 
 # Load environment variables from .env
 load_dotenv()
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 if not openai_api_key:
-    raise RuntimeError("OPENAI_API_KEY not set in environment or .env file")
+    st.error("OPENAI_API_KEY not set in environment or .env file")
+    st.stop()
 client = OpenAI(api_key=openai_api_key)
 # Load index + chunk text with error handling
 try:
     if not os.path.exists("magazine_index.faiss"):
-        logger.error("❌ magazine_index.faiss not found! Run extract_and_index.py first.")
-        raise FileNotFoundError("Index file not found")
-    
+        st.error("❌ magazine_index.faiss not found! Run extract_and_index.py first.")
+        st.stop()
     if not os.path.exists("magazine_chunks.pkl"):
-        logger.error("❌ magazine_chunks.pkl not found! Run extract_and_index.py first.")
-        raise FileNotFoundError("Chunks file not found")
-    
-    logger.info("📂 Loading FAISS index...")
+        st.error("❌ magazine_chunks.pkl not found! Run extract_and_index.py first.")
+        st.stop()
     index = faiss.read_index("magazine_index.faiss")
-    logger.info(f"✅ Index loaded with {index.ntotal} vectors")
-    
-    logger.info("📂 Loading text chunks...")
     with open("magazine_chunks.pkl", "rb") as f:
         chunks = pickle.load(f)
-    logger.info(f"✅ Loaded {len(chunks)} text chunks")
-    
     if len(chunks) == 0:
-        logger.error("❌ No chunks found in pickle file!")
-        raise ValueError("Empty chunks file")
-    
-    # Log first few chunks for debugging
-    logger.info("📋 First few chunks preview:")
-    for i, chunk in enumerate(chunks[:3]):
-        preview = chunk[:100].replace('\n', ' ')
-        logger.info(f"   Chunk {i}: {preview}...")
-
+        st.error("❌ No chunks found in pickle file!")
+        st.stop()
 except Exception as e:
-    logger.error(f"❌ Failed to load index/chunks: {str(e)}")
+    st.error(f"❌ Failed to load index/chunks: {str(e)}")
     index = None
     chunks = []
 
@@ -153,50 +139,36 @@ def calculate_recency_bias(chunk):
         logger.debug(f"Error calculating recency bias: {str(e)}")
         return 0.3  # Default moderate score
 
-@app.route("/ask", methods=["POST"])
-def ask():
-    try:
-        # Check if system is properly initialized
-        if index is None or not chunks:
-            logger.error("❌ System not properly initialized")
-            return jsonify({"error": "System not initialized. Please run extract_and_index.py first."}), 500
+# Streamlit UI
+st.title("🍷 Wine Magazine Assistant")
+st.write("Ask questions about wine using magazine content!")
 
-        data = request.get_json()
-        query = data.get("question", "")
-        if not query:
-            return jsonify({"error": "No question provided"}), 400
+if index is None or not chunks:
+    st.error("System not initialized. Please run extract_and_index.py first.")
+    st.stop()
 
-        logger.info(f"❓ Received question: {query}")
+question = st.text_input("Enter your wine question:")
+ask_button = st.button("Ask")
 
-        query_embedding = embed_query(query)
-        
-        D, I = index.search(np.array([query_embedding]), k=3)  # Reduced to 3 for maximum speed
-        
-        # Get top 3 chunks directly - skip recency bias for speed
-        relevant_chunks = []
-        for idx in I[0]:
-            if idx < len(chunks):
-                chunk = chunks[idx]
-                # Truncate chunks to reduce context size and speed up GPT
-                truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
-                relevant_chunks.append(truncated_chunk)
-        
-        relevant = "\n\n".join(relevant_chunks)
-        logger.info(f"📝 Using {len(relevant_chunks)} relevant chunks, total length: {len(relevant)} chars")
-        
-        # Log relevant content preview
-        if relevant:
-            preview = relevant[:200].replace('\n', ' ')
-            logger.info(f"📋 Relevant content preview: {preview}...")
-        else:
-            logger.warning("⚠️  No relevant content found!")
-
-        prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.
+if ask_button and question:
+    st.info(f"❓ Received question: {question}")
+    query_embedding = embed_query(question)
+    D, I = index.search(np.array([query_embedding]), k=3)
+    relevant_chunks = []
+    for idx in I[0]:
+        if idx < len(chunks):
+            chunk = chunks[idx]
+            truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
+            relevant_chunks.append(truncated_chunk)
+    relevant = "\n\n".join(relevant_chunks)
+    st.write("### Relevant magazine content:")
+    st.write(relevant)
+    prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.
 
 Here is relevant context from the wine magazines:
 {relevant}
 
-Question: {query}
+Question: {question}
 
 Instructions:
 - Keep responses concise but informative (2-4 paragraphs max)
@@ -207,63 +179,28 @@ Instructions:
 - End with source citations: "Sommelier India, <issue number>, <year>"
 
 Be direct and focused - provide depth without being wordy."""
-
+    try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=400,  # Further reduced for maximum speed
+            max_tokens=400,
             temperature=0.3
         )
-
         answer = response.choices[0].message.content
-        logger.info(f"✅ Generated answer: {answer[:100]}...")
-        
-        # Preserve formatting by not modifying the response
-        return jsonify({"answer": answer})
-
+        st.success("Wine Expert Answer:")
+        st.write(answer)
     except Exception as e:
-        logger.error(f"❌ Error in ask endpoint: {str(e)}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        st.error(f"Error generating answer: {str(e)}")
 
-@app.route("/")
-def serve_html():
-    return send_from_directory(".", "index.html")
 
-@app.route("/debug")
-def debug_info():
-    """Debug endpoint to check system status"""
-    info = {
-        "index_loaded": index is not None,
-        "chunks_loaded": len(chunks) if chunks else 0,
-        "index_vectors": index.ntotal if index else 0,
-        "files_exist": {
-            "index": os.path.exists("magazine_index.faiss"),
-            "chunks": os.path.exists("magazine_chunks.pkl")
-        }
-    }
-    if chunks:
-        info["sample_chunk"] = chunks[0][:200] + "..." if len(chunks[0]) > 200 else chunks[0]
-    return jsonify(info)
+# Follow-up questions UI
+st.write("---")
+st.subheader("Get follow-up wine questions")
+previous_question = st.text_input("Enter your previous wine question for follow-ups:")
+followup_button = st.button("Get Follow-up Questions")
 
-@app.route("/followup", methods=["POST"])
-def get_followup_questions():
-    try:
-        data = request.get_json()
-        previous_question = data.get("previous_question", "")
-        
-        if not previous_question:
-            # Return Popular Questions without validation for speed
-            return jsonify({
-                "title": "Popular Questions",
-                "questions": [
-                    "What are the best wine pairings for summer dishes?",
-                    "How should I store my wine collection properly?",
-                    "What's the difference between Old World and New World wines?"
-                ]
-            })
-        
-        # Generate follow-up questions based on previous query
-        prompt = f"""Based on this wine-related question: "{previous_question}"
+if followup_button and previous_question:
+    prompt = f"""Based on this wine-related question: "{previous_question}"
 
 Generate 5 natural follow-up questions that someone might ask next. Make them specific and relevant to wine knowledge that would likely be covered in wine magazines.
 
@@ -273,31 +210,26 @@ Format as a simple list:
 3. [question]
 4. [question]
 5. [question]"""
-
+    try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,  # Reduced for speed
+            max_tokens=150,
             temperature=0.7
         )
-
         answer = response.choices[0].message.content.strip()
-        
-        # Parse the response to extract questions
         lines = answer.split('\n')
         questions = []
         for line in lines:
             if line.strip() and any(line.startswith(f'{i}.') for i in range(1, 6)):
-                question = line.split('.', 1)[1].strip()
-                questions.append(question)
-                if len(questions) >= 3:  # Stop at 3 for speed
+                q = line.split('.', 1)[1].strip()
+                questions.append(q)
+                if len(questions) >= 3:
                     break
-        
-        # If we don't have enough questions, add fallbacks
         if len(questions) < 3:
             fallback_questions = [
                 "Tell me more about wine terminology",
-                "What are some wine tasting techniques?", 
+                "What are some wine tasting techniques?",
                 "How do wine regions affect flavor?"
             ]
             for fallback in fallback_questions:
@@ -305,22 +237,11 @@ Format as a simple list:
                     break
                 if fallback not in questions:
                     questions.append(fallback)
-        
-        return jsonify({
-            "title": "Follow-up Questions",
-            "questions": questions[:3]  # Ensure max 3 questions
-        })
-
+        st.success("Follow-up Questions:")
+        for q in questions[:3]:
+            st.write(f"- {q}")
     except Exception as e:
-        logger.error(f"❌ Error generating follow-up questions: {str(e)}")
-        return jsonify({
-            "title": "Suggested Questions",
-            "questions": [
-                "Tell me more about wine styles",
-                "What are some wine tasting tips?",
-                "How do I choose the right wine?"
-            ]
-        })
+        st.error(f"Error generating follow-up questions: {str(e)}")
 
 def validate_question_has_good_answer(question):
     """Check if a question has relevant content in the magazine database"""
@@ -345,12 +266,5 @@ def validate_question_has_good_answer(question):
         logger.warning(f"⚠️  Error validating question '{question}': {str(e)}")
         return False
 
-if __name__ == "__main__":
-    logger.info("🍷 Wine Magazine Assistant starting...")
-    if index is None or not chunks:
-        logger.error("❌ System not properly initialized. Please run extract_and_index.py first!")
-    else:
-        logger.info("✅ System ready!")
-    app.run(host="0.0.0.0", port=8000)
-    logger.info("🌐 Running on http://0.0.0.0:8000")
+# Remove Flask app.run for Streamlit
 
