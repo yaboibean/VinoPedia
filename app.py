@@ -306,7 +306,8 @@ with col3:
                 "transform:translateY(-1px) scale(1.01);}}</style>"
             )
             st.markdown(hover_style, unsafe_allow_html=True)
-            if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question"):
+            # Disable button if thinking to prevent rerun recursion
+            if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question", disabled=st.session_state.get('thinking', False)):
                 if not st.session_state.get('thinking', False):
                     st.session_state.last_question = q
                     st.session_state.chat_history.append({"role": "user", "content": q})
