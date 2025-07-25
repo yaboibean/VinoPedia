@@ -152,16 +152,26 @@ with col2:
 
 
     # --- Chatbot input (no rerun, immediate response) ---
-    question = st.text_input("Ask a wine question", placeholder="What would you like to know about wine?", key="question_input", label_visibility="collapsed")
-    ask_button = st.button("Ask", key="ask_button")
+    if 'question_input' not in st.session_state:
+        st.session_state.question_input = ""
 
     # Add spinner CSS
     st.markdown('''<style>@keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>''', unsafe_allow_html=True)
+
+    question = st.text_input(
+        "Ask a wine question",
+        placeholder="What would you like to know about wine?",
+        key="question_input",
+        label_visibility="collapsed",
+        value=st.session_state.question_input
+    )
+    ask_button = st.button("Ask", key="ask_button")
 
     # Handle question submission and response inline
     if ask_button and question:
         st.session_state.last_question = question
         st.session_state.chat_history.append({"role": "user", "content": question})
+        st.session_state.question_input = ""  # Clear before rerun
         with st.spinner("Thinking..."):
             try:
                 query_embedding = embed_query(question)
@@ -187,8 +197,7 @@ with col2:
                 tb = traceback.format_exc()
                 error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
                 st.session_state.chat_history.append({"role": "assistant", "content": error_message})
-        # Clear the input after sending
-        st.session_state.question_input = ""
+        st.experimental_rerun()
 
 
 def calculate_recency_bias(chunk):
