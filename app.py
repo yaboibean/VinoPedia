@@ -173,7 +173,10 @@ with col1:
             answer = response.choices[0].message.content
             st.session_state.chat_history.append({"role": "assistant", "content": answer})
         except Exception as e:
-            st.session_state.chat_history.append({"role": "assistant", "content": f"Error generating answer: {str(e)}"})
+            import traceback
+            tb = traceback.format_exc()
+            error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
+            st.session_state.chat_history.append({"role": "assistant", "content": error_message})
 
 # --- Follow-up Section (Right Panel) ---
 with col2:
