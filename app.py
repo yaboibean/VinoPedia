@@ -111,35 +111,12 @@ if 'last_question' not in st.session_state:
     st.session_state.last_question = ''
 
 
-# --- Two-column layout: Chat (left), Questions (right) ---
-col1, col2 = st.columns([2, 1], gap="large")
 
-# --- Chat Section (Left Panel) ---
-with col1:
-    # --- Follow-up and Common Questions (Top of Chat) ---
-    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))[:3]
-    st.markdown('<div class="followup-section" style="margin-bottom:18px;">', unsafe_allow_html=True)
-    st.markdown('<h3 style="color:#291010; font-size:1.05em; font-weight:700; letter-spacing:0.5px; text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea; margin-bottom:8px;">Suggested Questions</h3>', unsafe_allow_html=True)
-    for i, q in enumerate(followup_questions):
-        btn_style = (
-            "background:linear-gradient(90deg,#fff 60%,#c9c7c7 100%);color:#291010;"
-            "border:1.5px solid #291010;border-radius:32px;padding:10px 18px;font-size:15px;"
-            "cursor:pointer;margin-bottom:6px;font-weight:500;outline:none;width:100%;text-align:left;"
-            "transition:background 0.2s,color 0.2s,box-shadow 0.2s,border-color 0.2s,transform 0.15s;"
-        )
-        hover_style = (
-            "<style>div[data-testid='stButton'] button:hover {"
-            "background:linear-gradient(90deg,#a8325a 10%,#291010 90%) !important;"
-            "color:#fff !important;border-color:#a8325a !important;box-shadow:0 3px 10px rgba(168,50,90,0.09);"
-            "transform:translateY(-1px) scale(1.01);}</style>"
-        )
-        st.markdown(hover_style, unsafe_allow_html=True)
-        if st.button(q, key=f"followup_{i}", help="Click to ask this question", args=None):
-            st.session_state.last_question = q
-            st.session_state.chat_history.append({"role": "user", "content": q})
-            st.session_state.thinking = True
-            st.experimental_rerun()
+# --- Two-column layout: Chat (center), Questions (right) ---
+col1, col2, col3 = st.columns([0.2, 1, 0.7], gap="large")
 
+# --- Chat Section (Center Panel) ---
+with col2:
     chat_container = st.container()
     if not st.session_state.chat_history:
         chat_container.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
@@ -341,11 +318,29 @@ def generate_followup_questions(last_question):
             "How do I choose the right wine?"
         ]
 
-# --- UI for Follow-up and Common Questions ---
-st.markdown('<div class="followup-section" style="margin-top:32px;">', unsafe_allow_html=True)
-st.markdown('<h3 style="color:#291010; font-size:1.18em; font-weight:700; letter-spacing:0.5px; text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea;">Follow-up & Common Questions</h3>', unsafe_allow_html=True)
-followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
-for q in followup_questions[:5]:
-    st.markdown(f'<button style="background:linear-gradient(90deg,#fff 60%,#c9c7c7 100%);color:#291010;border:1.5px solid #291010;border-radius:32px;padding:14px 24px;font-size:17px;cursor:pointer;margin-bottom:8px;font-weight:500;outline:none;width:100%;text-align:left;">{q}</button>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Follow-up and Common Questions (Right Panel) ---
+with col3:
+    st.markdown('<div class="followup-section" style="margin-top:32px;">', unsafe_allow_html=True)
+    st.markdown('<h3 style="color:#291010; font-size:1.18em; font-weight:700; letter-spacing:0.5px; text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea;">Follow-up & Common Questions</h3>', unsafe_allow_html=True)
+    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))[:3]
+    for i, q in enumerate(followup_questions):
+        btn_style = (
+            "background:linear-gradient(90deg,#fff 60%,#c9c7c7 100%);color:#291010;"
+            "border:1.5px solid #291010;border-radius:32px;padding:14px 24px;font-size:17px;cursor:pointer;margin-bottom:8px;font-weight:500;outline:none;width:100%;text-align:left;"
+            "transition:background 0.2s,color 0.2s,box-shadow 0.2s,border-color 0.2s,transform 0.15s;"
+        )
+        hover_style = (
+            f"<style>div[data-testid='stButton'] button[data-testid='followup_btn_{i}']:hover {{"
+            "background:linear-gradient(90deg,#a8325a 10%,#291010 90%) !important;"
+            "color:#fff !important;border-color:#a8325a !important;box-shadow:0 3px 10px rgba(168,50,90,0.09);"
+            "transform:translateY(-1px) scale(1.01);}}</style>"
+        )
+        st.markdown(hover_style, unsafe_allow_html=True)
+        if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question"):
+            st.session_state.last_question = q
+            st.session_state.chat_history.append({"role": "user", "content": q})
+            st.session_state.thinking = True
+            st.experimental_rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
