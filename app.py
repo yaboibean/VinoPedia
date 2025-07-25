@@ -200,5 +200,57 @@ def calculate_recency_bias(chunk):
         return 0.3  # Default moderate score
 
 
-# Flask code and __main__ block removed. All Streamlit UI and backend logic preserved.
+
+# --- Follow-up and Common Questions Section ---
+import random
+
+def generate_followup_questions(last_question):
+    if not last_question:
+        # Commonly asked questions
+        return [
+            "What are the best wine pairings for summer dishes?",
+            "How should I store my wine collection properly?",
+            "What's the difference between Old World and New World wines?"
+        ]
+    prompt = f"""Based on this wine-related question: \"{last_question}\"\n\nGenerate 5 natural follow-up questions that someone might ask next. Make them specific and relevant to wine knowledge that would likely be covered in wine magazines.\n\nFormat as a simple list:\n1. [question]\n2. [question]\n3. [question]\n4. [question]\n5. [question]"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.7
+        )
+        answer = response.choices[0].message.content.strip()
+        lines = answer.split('\n')
+        questions = []
+        for line in lines:
+            if line.strip() and any(line.startswith(f'{i}.') for i in range(1, 6)):
+                q = line.split('.', 1)[1].strip()
+                questions.append(q)
+        # Fallbacks if not enough
+        fallback_questions = [
+            "Tell me more about wine terminology",
+            "What are some wine tasting techniques?",
+            "How do wine regions affect flavor?"
+        ]
+        for fallback in fallback_questions:
+            if len(questions) >= 5:
+                break
+            if fallback not in questions:
+                questions.append(fallback)
+        return questions[:5]
+    except Exception as e:
+        return [
+            "Tell me more about wine styles",
+            "What are some wine tasting tips?",
+            "How do I choose the right wine?"
+        ]
+
+# --- UI for Follow-up and Common Questions ---
+st.markdown('<div class="followup-section" style="margin-top:32px;">', unsafe_allow_html=True)
+st.markdown('<h3 style="color:#291010; font-size:1.18em; font-weight:700; letter-spacing:0.5px; text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea;">Follow-up & Common Questions</h3>', unsafe_allow_html=True)
+followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+for q in followup_questions[:5]:
+    st.markdown(f'<button style="background:linear-gradient(90deg,#fff 60%,#c9c7c7 100%);color:#291010;border:1.5px solid #291010;border-radius:32px;padding:14px 24px;font-size:17px;cursor:pointer;margin-bottom:8px;font-weight:500;outline:none;width:100%;text-align:left;">{q}</button>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
