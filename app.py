@@ -202,7 +202,8 @@ with col2:
                     f'</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- Modern ChatGPT-like input bar using Streamlit widgets only ---
+    # --- Modern fixed input bar ---
+    import streamlit.components.v1 as components
     if 'question_input' not in st.session_state:
         st.session_state.question_input = ""
 
@@ -240,67 +241,30 @@ with col2:
                 st.session_state.chat_history.append({"role": "assistant", "content": error_message})
         st.experimental_rerun()
 
-    st.markdown('''<style>
-    .modern-input-bar-st {
-        position: fixed;
-        left: 0; right: 0; bottom: 0;
-        background: #fff;
-        box-shadow: 0 -2px 16px rgba(90,24,50,0.07);
-        padding: 18px 0 18px 0;
-        z-index: 100;
-        display: flex;
-        justify-content: center;
-    }
-    .modern-input-inner-st {
-        width: 100%;
-        max-width: 700px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .modern-input-box-st {
-        flex: 1;
-        border-radius: 12px;
-        border: 1.5px solid #a8325a;
-        padding: 12px 16px;
-        font-size: 1.08em;
-        background: #f7f7fa;
-        color: #1a1a1a;
-        outline: none;
-    }
-    .modern-send-btn-st {
-        background: linear-gradient(90deg,#a8325a 10%,#291010 90%);
-        color: #fff;
-        border: none;
-        border-radius: 10px;
-        padding: 10px 22px;
-        font-size: 1.08em;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-        box-shadow: 0 2px 8px rgba(90,24,50,0.09);
-    }
-    .modern-send-btn-st:active {
-        background: linear-gradient(90deg,#291010 10%,#a8325a 90%);
-    }
-    </style>''', unsafe_allow_html=True)
+    # Render the fixed input bar using HTML and Streamlit widgets
+    components.html('''
+    <div class="modern-input-bar">
+      <form onsubmit="window.parent.postMessage({streamlitSendMessage:true}, '*');return false;">
+        <div class="modern-input-inner">
+          <input id="modern_input_box" class="modern-input-box" name="modern_input_box" autocomplete="off" placeholder="What would you like to know about wine?" style="width:100%;" />
+          <button type="submit" class="modern-send-btn">Send</button>
+        </div>
+      </form>
+    </div>
+    <script>
+    const input = window.parent.document.querySelector('input[data-testid="stTextInput"]');
+    if(input){input.focus();}
+    </script>
+    ''', height=90)
 
-    # Render the input bar using Streamlit widgets
-    st.markdown('<div class="modern-input-bar-st">', unsafe_allow_html=True)
-    c1, c2 = st.columns([8, 2], gap="small")
-    with c1:
-        st.text_input(
-            "",
-            key="question_input",
-            label_visibility="collapsed",
-            placeholder="What would you like to know about wine?",
-            on_change=send_message,
-            value=st.session_state.question_input,
-            help="Type your question and press Enter"
-        )
-    with c2:
-        st.button("Send", key="send_btn", on_click=send_message, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Streamlit input for chat (hidden, but triggers on enter or send)
+    st.text_input(
+        "",
+        key="question_input",
+        label_visibility="collapsed",
+        placeholder="What would you like to know about wine?",
+        on_change=send_message
+    )
 
 
 def calculate_recency_bias(chunk):
