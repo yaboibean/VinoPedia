@@ -150,21 +150,45 @@ with col2:
     if 'thinking' not in st.session_state:
         st.session_state.thinking = False
 
-    with st.form(key="question_form", clear_on_submit=True):
-        question = st.text_input("", placeholder="What would you like to know about wine?", key="question_input")
-        ask_button = st.form_submit_button("Ask")
 
-    # Show thinking indicator if active
-    if st.session_state.thinking:
-        st.markdown('''
-        <div style="margin:10px 0 16px 0; color:#a8325a; background:#f7f3f6; border-radius:10px; padding:7px 14px; font-size:1em; font-weight:500; display:flex; align-items:center; border:1px solid #e9e3ea; justify-content:left;">
-            <span class="spinner" style="display:inline-block;width:18px;height:18px;border:3px solid #e9ecef;border-top:3px solid #a8325a;border-radius:50%;margin-right:10px;animation:spin 1s linear infinite;"></span>
-            <span>Thinking...</span>
-        </div>
-        ''', unsafe_allow_html=True)
+    # --- Chatbot input (no rerun, immediate response) ---
+    question = st.text_input("Ask a wine question", placeholder="What would you like to know about wine?", key="question_input", label_visibility="collapsed")
+    ask_button = st.button("Ask", key="ask_button")
 
     # Add spinner CSS
     st.markdown('''<style>@keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>''', unsafe_allow_html=True)
+
+    # Handle question submission and response inline
+    if ask_button and question:
+        st.session_state.last_question = question
+        st.session_state.chat_history.append({"role": "user", "content": question})
+        with st.spinner("Thinking..."):
+            try:
+                query_embedding = embed_query(question)
+                D, I = index.search(np.array([query_embedding]), k=3)
+                relevant_chunks = []
+                for idx in I[0]:
+                    if idx < len(chunks):
+                        chunk = chunks[idx]
+                        truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
+                        relevant_chunks.append(truncated_chunk)
+                relevant = "\n\n".join(relevant_chunks)
+                prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=400,
+                    temperature=0.3
+                )
+                answer = response.choices[0].message.content
+                st.session_state.chat_history.append({"role": "assistant", "content": answer})
+            except Exception as e:
+                import traceback
+                tb = traceback.format_exc()
+                error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
+                st.session_state.chat_history.append({"role": "assistant", "content": error_message})
+        # Clear the input after sending
+        st.session_state.question_input = ""
 
 
 def calculate_recency_bias(chunk):
