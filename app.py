@@ -144,47 +144,46 @@ with col2:
     # Add spinner CSS
     st.markdown('''<style>@keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>''', unsafe_allow_html=True)
 
-    if ask_button and question:
-        st.session_state.last_question = question
-        st.session_state.chat_history.append({"role": "user", "content": question})
-        st.session_state.thinking = True
-        st.experimental_rerun()
-
-    # If thinking, process the latest question and show answer
-    if st.session_state.thinking and st.session_state.last_question:
-        q = st.session_state.last_question
-        try:
-            query_embedding = embed_query(q)
-            D, I = index.search(np.array([query_embedding]), k=3)
-            relevant_chunks = []
-            for idx in I[0]:
-                if idx < len(chunks):
-                    chunk = chunks[idx]
-                    truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
-                    relevant_chunks.append(truncated_chunk)
-            relevant = "\n\n".join(relevant_chunks)
-            prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {q}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=400,
-                temperature=0.3
-            )
-            answer = response.choices[0].message.content
-            st.session_state.chat_history.append({"role": "assistant", "content": answer})
-        except Exception as e:
-            import traceback
-            tb = traceback.format_exc()
-            error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
-            st.session_state.chat_history.append({"role": "assistant", "content": error_message})
-        st.session_state.thinking = False
-        st.experimental_rerun()
-
-
-def calculate_recency_bias_fast(chunk):
-    """Fast recency bias calculation - optimized for speed"""
+    if not last_question:
+        # Commonly asked questions
+        return [
+            "What are the best wine pairings for summer dishes?",
+            "How should I store my wine collection properly?",
+            "What's the difference between Old World and New World wines?"
+        ]
+    prompt = f"Give me 3 followup questions based on this: {last_question}\nFormat as a simple list:\n1. [question]\n2. [question]\n3. [question]"
     try:
-        # Quick regex search for recent years
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=100,
+            temperature=0.7
+        )
+        answer = response.choices[0].message.content.strip()
+        lines = answer.split('\n')
+        questions = []
+        for line in lines:
+            if line.strip() and any(line.startswith(f'{i}.') for i in range(1, 4)):
+                q = line.split('.', 1)[1].strip()
+                questions.append(q)
+        # Fallbacks if not enough
+        fallback_questions = [
+            "Tell me more about wine terminology",
+            "What are some wine tasting techniques?",
+            "How do wine regions affect flavor?"
+        ]
+        for fallback in fallback_questions:
+            if len(questions) >= 3:
+                break
+            if fallback not in questions:
+                questions.append(fallback)
+        return questions[:3]
+    except Exception as e:
+        return [
+            "Tell me more about wine styles",
+            "What are some wine tasting tips?",
+            "How do I choose the right wine?"
+        ]
         import re
         
         # Look for years 2020+ (most relevant)
@@ -323,7 +322,7 @@ def generate_followup_questions(last_question):
 with col3:
     st.markdown('<div class="followup-section" style="margin-top:32px;">', unsafe_allow_html=True)
     st.markdown('<h3 style="color:#291010; font-size:1.18em; font-weight:700; letter-spacing:0.5px; text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea;">Follow-up & Common Questions</h3>', unsafe_allow_html=True)
-    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))[:3]
+    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
     for i, q in enumerate(followup_questions):
         btn_style = (
             "background:linear-gradient(90deg,#fff 60%,#c9c7c7 100%);color:#291010;"
@@ -338,9 +337,10 @@ with col3:
         )
         st.markdown(hover_style, unsafe_allow_html=True)
         if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question"):
-            st.session_state.last_question = q
-            st.session_state.chat_history.append({"role": "user", "content": q})
-            st.session_state.thinking = True
-            st.experimental_rerun()
+            if not st.session_state.get('thinking', False):
+                st.session_state.last_question = q
+                st.session_state.chat_history.append({"role": "user", "content": q})
+                st.session_state.thinking = True
+                st.experimental_rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
