@@ -121,11 +121,28 @@ with col2:
     if not st.session_state.chat_history:
         chat_container.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
     else:
+        chat_container.markdown('<style>'
+            '.chat-bubble {display:flex;align-items:flex-end;margin-bottom:14px;}'
+            '.chat-bubble.user {justify-content:flex-end;}'
+            '.chat-bubble.assistant {justify-content:flex-start;}'
+            '.bubble-content {padding:13px 20px;border-radius:18px;max-width:75vw;min-width:40px;box-shadow:0 2px 8px rgba(90,24,50,0.09);font-size:1.08em;line-height:1.6;}'
+            '.bubble-content.user {background:#291010;color:#fff;border-bottom-right-radius:6px;border:1.5px solid #7a1c3a;}'
+            '.bubble-content.assistant {background:#fff;color:#2d0a18;border-bottom-left-radius:6px;border:1.5px solid #b7aeb4;}'
+            '.avatar {width:36px;height:36px;border-radius:50%;background:#e9e3ea;display:flex;align-items:center;justify-content:center;font-size:1.2em;font-weight:700;margin:0 10px;box-shadow:0 1px 4px #e9e3ea;}'
+            '</style>', unsafe_allow_html=True)
         for msg in st.session_state.chat_history:
             if msg['role'] == 'user':
-                chat_container.markdown(f'<div style="background:#291010;color:#ac9c9c;padding:12px 18px;border-radius:18px 18px 5px 18px;margin-left:auto;margin-right:0;max-width:80%;word-wrap:break-word;box-shadow:0 2px 8px rgba(90,24,50,0.09);border:1px solid #7a1c3a;margin-bottom:10px;">{msg["content"]}</div>', unsafe_allow_html=True)
+                chat_container.markdown(
+                    f'<div class="chat-bubble user">'
+                    f'<div class="bubble-content user">{msg["content"]}</div>'
+                    f'<div class="avatar" title="You" style="background:#7a1c3a;color:#fff;">🧑</div>'
+                    f'</div>', unsafe_allow_html=True)
             else:
-                chat_container.markdown(f'<div style="background:#fff;color:#2d0a18;padding:15px 20px;border-radius:18px 18px 18px 5px;border:1px solid #b7aeb4;max-width:90%;word-wrap:break-word;line-height:1.6;box-shadow:0 2px 10px rgba(90,24,50,0.04);margin-bottom:20px;">{msg["content"]}</div>', unsafe_allow_html=True)
+                chat_container.markdown(
+                    f'<div class="chat-bubble assistant">'
+                    f'<div class="avatar" title="Cellar Sage" style="background:#fff;color:#a8325a;border:1.5px solid #a8325a;">🍷</div>'
+                    f'<div class="bubble-content assistant">{msg["content"]}</div>'
+                    f'</div>', unsafe_allow_html=True)
 
     st.markdown('<div style="margin-top:20px;"></div>', unsafe_allow_html=True)
 
