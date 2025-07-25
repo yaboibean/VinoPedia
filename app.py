@@ -1,6 +1,50 @@
 
 import streamlit as st
 from openai import OpenAI
+# --- Follow-up and Common Questions Section ---
+import random
+
+def generate_followup_questions(last_question):
+    if not last_question:
+        # Commonly asked questions
+        return [
+            "What are the best wine pairings for summer dishes?",
+            "How should I store my wine collection properly?",
+            "What's the difference between Old World and New World wines?"
+        ]
+    prompt = f"""Based on this wine-related question: \"{last_question}\"\n\nGenerate 5 natural follow-up questions that someone might ask next. Make them specific and relevant to wine knowledge that would likely be covered in wine magazines.\n\nFormat as a simple list:\n1. [question]\n2. [question]\n3. [question]\n4. [question]\n5. [question]"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.7
+        )
+        answer = response.choices[0].message.content.strip()
+        lines = answer.split('\n')
+        questions = []
+        for line in lines:
+            if line.strip() and any(line.startswith(f'{i}.') for i in range(1, 6)):
+                q = line.split('.', 1)[1].strip()
+                questions.append(q)
+        # Fallbacks if not enough
+        fallback_questions = [
+            "Tell me more about wine terminology",
+            "What are some wine tasting techniques?",
+            "How do wine regions affect flavor?"
+        ]
+        for fallback in fallback_questions:
+            if len(questions) >= 5:
+                break
+            if fallback not in questions:
+                questions.append(fallback)
+        return questions[:5]
+    except Exception as e:
+        return [
+            "Tell me more about wine styles",
+            "What are some wine tasting tips?",
+            "How do I choose the right wine?"
+        ]
 import faiss
 import numpy as np
 import pickle
