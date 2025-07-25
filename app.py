@@ -5,6 +5,32 @@ import faiss
 import numpy as np
 import pickle
 import os
+# --- Diagnostics Section ---
+import sys
+st.markdown('<div style="background:#fff3cd;padding:10px 20px;border-radius:8px;border:1.5px solid #856404;margin-bottom:18px;">', unsafe_allow_html=True)
+api_key_source = ""
+if os.environ.get("OPENAI_API_KEY"):
+    api_key_source = "Loaded from environment variable or Streamlit secret."
+elif os.path.exists(".env"):
+    api_key_source = ".env file present, but key not loaded."
+else:
+    api_key_source = "No API key found."
+st.write(f"**OPENAI_API_KEY present:** {'Yes' if os.environ.get('OPENAI_API_KEY') else 'No'}  |  **Source:** {api_key_source}")
+if st.button("Test OpenAI API connection"):
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": "Hello!"}],
+            max_tokens=10
+        )
+        st.success("OpenAI API test succeeded! Response: " + response.choices[0].message.content)
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        st.error(f"OpenAI API test failed: {str(e)}\n\nTraceback:\n{tb}")
+st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Load environment and data ---
 load_dotenv()
