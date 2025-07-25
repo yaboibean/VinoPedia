@@ -140,9 +140,9 @@ with col2:
     # Show thinking indicator if active
     if st.session_state.thinking:
         st.markdown('''
-        <div style="margin:18px 0 28px 0; color:#fff; background:#a8325a; border-radius:18px; padding:18px 24px; font-size:1.25em; font-weight:700; display:flex; align-items:center; box-shadow:0 2px 12px rgba(168,50,90,0.13); border:2px solid #fff; justify-content:center;">
-            <span class="spinner" style="display:inline-block;width:28px;height:28px;border:4px solid #e9ecef;border-top:4px solid #fff;border-radius:50%;margin-right:18px;animation:spin 1s linear infinite;"></span>
-            <span>Thinking... Please wait while I search the wine archives and generate your answer.</span>
+        <div style="margin:10px 0 16px 0; color:#a8325a; background:#f7f3f6; border-radius:10px; padding:7px 14px; font-size:1em; font-weight:500; display:flex; align-items:center; border:1px solid #e9e3ea; justify-content:left;">
+            <span class="spinner" style="display:inline-block;width:18px;height:18px;border:3px solid #e9ecef;border-top:3px solid #a8325a;border-radius:50%;margin-right:10px;animation:spin 1s linear infinite;"></span>
+            <span>Thinking...</span>
         </div>
         ''', unsafe_allow_html=True)
 
@@ -269,8 +269,8 @@ with col3:
     # Show a prominent thinking indicator in the right panel if thinking
     if thinking:
         st.markdown('''
-        <div style="margin:18px 0 28px 0; color:#fff; background:#a8325a; border-radius:18px; padding:18px 24px; font-size:1.15em; font-weight:700; display:flex; align-items:center; box-shadow:0 2px 12px rgba(168,50,90,0.13); border:2px solid #fff; justify-content:center;">
-            <span class="spinner" style="display:inline-block;width:22px;height:22px;border:3px solid #e9ecef;border-top:3px solid #fff;border-radius:50%;margin-right:14px;animation:spin 1s linear infinite;"></span>
+        <div style="margin:10px 0 16px 0; color:#a8325a; background:#f7f3f6; border-radius:10px; padding:7px 14px; font-size:0.98em; font-weight:500; display:flex; align-items:center; border:1px solid #e9e3ea; justify-content:left;">
+            <span class="spinner" style="display:inline-block;width:15px;height:15px;border:2.5px solid #e9ecef;border-top:2.5px solid #a8325a;border-radius:50%;margin-right:8px;animation:spin 1s linear infinite;"></span>
             <span>Generating follow-up questions...</span>
         </div>
         ''', unsafe_allow_html=True)
