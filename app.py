@@ -117,64 +117,106 @@ col1, col2, col3 = st.columns([0.2, 1, 0.7], gap="large")
 
 # --- Chat Section (Center Panel) ---
 with col2:
-    chat_container = st.container()
+    # --- Modern ChatGPT-like UI ---
+    st.markdown('''<style>
+    .modern-chat-container {
+        max-width: 700px;
+        margin: 0 auto 0 auto;
+        padding: 0 0 80px 0;
+        min-height: 70vh;
+        background: #f7f7fa;
+        border-radius: 18px;
+        box-shadow: 0 2px 24px rgba(90,24,50,0.07);
+        position: relative;
+    }
+    .modern-chat-bubble {display:flex;align-items:flex-end;margin-bottom:18px;}
+    .modern-chat-bubble.user {justify-content:flex-end;}
+    .modern-chat-bubble.assistant {justify-content:flex-start;}
+    .modern-bubble-content {padding:16px 22px;border-radius:18px;max-width:70vw;min-width:40px;box-shadow:0 2px 8px rgba(90,24,50,0.09);font-size:1.09em;line-height:1.7;}
+    .modern-bubble-content.user {background:#1a1a1a;color:#fff;border-bottom-right-radius:7px;border:1.5px solid #7a1c3a;}
+    .modern-bubble-content.assistant {background:#fff;color:#2d0a18;border-bottom-left-radius:7px;border:1.5px solid #a8325a;}
+    .modern-avatar {width:38px;height:38px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.25em;font-weight:700;margin:0 12px;box-shadow:0 1px 4px #e9e3ea;}
+    .modern-avatar.user {background:#7a1c3a;color:#fff;}
+    .modern-avatar.assistant {background:#fff;color:#a8325a;border:1.5px solid #a8325a;}
+    .modern-input-bar {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        background: #fff;
+        box-shadow: 0 -2px 16px rgba(90,24,50,0.07);
+        padding: 18px 0 18px 0;
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+    }
+    .modern-input-inner {
+        width: 100%;
+        max-width: 700px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .modern-input-box {
+        flex: 1;
+        border-radius: 12px;
+        border: 1.5px solid #a8325a;
+        padding: 12px 16px;
+        font-size: 1.08em;
+        background: #f7f7fa;
+        color: #1a1a1a;
+        outline: none;
+    }
+    .modern-send-btn {
+        background: linear-gradient(90deg,#a8325a 10%,#291010 90%);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 22px;
+        font-size: 1.08em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        box-shadow: 0 2px 8px rgba(90,24,50,0.09);
+    }
+    .modern-send-btn:active {
+        background: linear-gradient(90deg,#291010 10%,#a8325a 90%);
+    }
+    </style>''', unsafe_allow_html=True)
+
+    # Chat area
+    st.markdown('<div class="modern-chat-container">', unsafe_allow_html=True)
     if not st.session_state.chat_history:
-        chat_container.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
+        st.markdown('<div class="empty-state" style="color:#a8325a;text-align:center;padding:60px 0 0 0;font-size:1.2em;">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
     else:
-        chat_container.markdown('<style>'
-            '.chat-bubble {display:flex;align-items:flex-end;margin-bottom:14px;}'
-            '.chat-bubble.user {justify-content:flex-end;}'
-            '.chat-bubble.assistant {justify-content:flex-start;}'
-            '.bubble-content {padding:13px 20px;border-radius:18px;max-width:75vw;min-width:40px;box-shadow:0 2px 8px rgba(90,24,50,0.09);font-size:1.08em;line-height:1.6;}'
-            '.bubble-content.user {background:#291010;color:#fff;border-bottom-right-radius:6px;border:1.5px solid #7a1c3a;}'
-            '.bubble-content.assistant {background:#fff;color:#2d0a18;border-bottom-left-radius:6px;border:1.5px solid #b7aeb4;}'
-            '.avatar {width:36px;height:36px;border-radius:50%;background:#e9e3ea;display:flex;align-items:center;justify-content:center;font-size:1.2em;font-weight:700;margin:0 10px;box-shadow:0 1px 4px #e9e3ea;}'
-            '</style>', unsafe_allow_html=True)
         for msg in st.session_state.chat_history:
             if msg['role'] == 'user':
-                chat_container.markdown(
-                    f'<div class="chat-bubble user">'
-                    f'<div class="bubble-content user">{msg["content"]}</div>'
-                    f'<div class="avatar" title="You" style="background:#7a1c3a;color:#fff;">🧑</div>'
+                st.markdown(
+                    f'<div class="modern-chat-bubble user">'
+                    f'<div class="modern-bubble-content user">{msg["content"]}</div>'
+                    f'<div class="modern-avatar user" title="You">🧑</div>'
                     f'</div>', unsafe_allow_html=True)
             else:
-                chat_container.markdown(
-                    f'<div class="chat-bubble assistant">'
-                    f'<div class="avatar" title="Cellar Sage" style="background:#fff;color:#a8325a;border:1.5px solid #a8325a;">🍷</div>'
-                    f'<div class="bubble-content assistant">{msg["content"]}</div>'
+                st.markdown(
+                    f'<div class="modern-chat-bubble assistant">'
+                    f'<div class="modern-avatar assistant" title="Cellar Sage">🍷</div>'
+                    f'<div class="modern-bubble-content assistant">{msg["content"]}</div>'
                     f'</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div style="margin-top:20px;"></div>', unsafe_allow_html=True)
-
-    # --- Thinking indicator state ---
-    if 'thinking' not in st.session_state:
-        st.session_state.thinking = False
-
-
-    # --- Chatbot input (no rerun, immediate response) ---
+    # --- Modern fixed input bar ---
+    import streamlit.components.v1 as components
     if 'question_input' not in st.session_state:
         st.session_state.question_input = ""
 
-    # Add spinner CSS
-    st.markdown('''<style>@keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>''', unsafe_allow_html=True)
-
-    question = st.text_input(
-        "Ask a wine question",
-        placeholder="What would you like to know about wine?",
-        key="question_input",
-        label_visibility="collapsed",
-        value=st.session_state.question_input
-    )
-    ask_button = st.button("Ask", key="ask_button")
-
-    # Handle question submission and response inline
-    if ask_button and question:
-        st.session_state.last_question = question
-        st.session_state.chat_history.append({"role": "user", "content": question})
-        st.session_state.question_input = ""  # Clear before rerun
+    def send_message():
+        q = st.session_state.question_input.strip()
+        if not q:
+            return
+        st.session_state.last_question = q
+        st.session_state.chat_history.append({"role": "user", "content": q})
+        st.session_state.question_input = ""
         with st.spinner("Thinking..."):
             try:
-                query_embedding = embed_query(question)
+                query_embedding = embed_query(q)
                 D, I = index.search(np.array([query_embedding]), k=3)
                 relevant_chunks = []
                 for idx in I[0]:
@@ -183,7 +225,7 @@ with col2:
                         truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
                         relevant_chunks.append(truncated_chunk)
                 relevant = "\n\n".join(relevant_chunks)
-                prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
+                prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {q}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": prompt}],
@@ -198,6 +240,31 @@ with col2:
                 error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
                 st.session_state.chat_history.append({"role": "assistant", "content": error_message})
         st.experimental_rerun()
+
+    # Render the fixed input bar using HTML and Streamlit widgets
+    components.html('''
+    <div class="modern-input-bar">
+      <form onsubmit="window.parent.postMessage({streamlitSendMessage:true}, '*');return false;">
+        <div class="modern-input-inner">
+          <input id="modern_input_box" class="modern-input-box" name="modern_input_box" autocomplete="off" placeholder="What would you like to know about wine?" style="width:100%;" />
+          <button type="submit" class="modern-send-btn">Send</button>
+        </div>
+      </form>
+    </div>
+    <script>
+    const input = window.parent.document.querySelector('input[data-testid="stTextInput"]');
+    if(input){input.focus();}
+    </script>
+    ''', height=90)
+
+    # Streamlit input for chat (hidden, but triggers on enter or send)
+    st.text_input(
+        "",
+        key="question_input",
+        label_visibility="collapsed",
+        placeholder="What would you like to know about wine?",
+        on_change=send_message
+    )
 
 
 def calculate_recency_bias(chunk):
