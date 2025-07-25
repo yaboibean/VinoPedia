@@ -1,10 +1,18 @@
-from flask import Flask, request, jsonify, send_from_directory
+
+import streamlit as st
 from openai import OpenAI
 import faiss
 import numpy as np
 import pickle
-import logging
 import os
+import logging
+
+# Configure logging (for local debug)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Configure logging
 logging.basicConfig(
@@ -13,42 +21,35 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-client = OpenAI(api_key="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")
+
+# --- Load environment and data ---
+from dotenv import load_dotenv
+load_dotenv()
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+if not openai_api_key:
+    st.error("OPENAI_API_KEY not set in environment or .env file")
+    st.stop()
+client = OpenAI(api_key=openai_api_key)
 
 # Load index + chunk text with error handling
 try:
     if not os.path.exists("magazine_index.faiss"):
-        logger.error("❌ magazine_index.faiss not found! Run extract_and_index.py first.")
-        raise FileNotFoundError("Index file not found")
-    
+        st.error("❌ magazine_index.faiss not found! Run extract_and_index.py first.")
+        st.stop()
     if not os.path.exists("magazine_chunks.pkl"):
-        logger.error("❌ magazine_chunks.pkl not found! Run extract_and_index.py first.")
-        raise FileNotFoundError("Chunks file not found")
-    
-    logger.info("📂 Loading FAISS index...")
+        st.error("❌ magazine_chunks.pkl not found! Run extract_and_index.py first.")
+        st.stop()
     index = faiss.read_index("magazine_index.faiss")
-    logger.info(f"✅ Index loaded with {index.ntotal} vectors")
-    
-    logger.info("📂 Loading text chunks...")
     with open("magazine_chunks.pkl", "rb") as f:
         chunks = pickle.load(f)
-    logger.info(f"✅ Loaded {len(chunks)} text chunks")
-    
     if len(chunks) == 0:
-        logger.error("❌ No chunks found in pickle file!")
-        raise ValueError("Empty chunks file")
-    
-    # Log first few chunks for debugging
-    logger.info("📋 First few chunks preview:")
-    for i, chunk in enumerate(chunks[:3]):
-        preview = chunk[:100].replace('\n', ' ')
-        logger.info(f"   Chunk {i}: {preview}...")
-
+        st.error("❌ No chunks found in pickle file!")
+        st.stop()
 except Exception as e:
-    logger.error(f"❌ Failed to load index/chunks: {str(e)}")
+    st.error(f"❌ Failed to load index/chunks: {str(e)}")
     index = None
     chunks = []
+
 
 def embed_query(query):
     response = client.embeddings.create(
@@ -56,6 +57,57 @@ def embed_query(query):
         model="text-embedding-3-small"
     )
     return np.array(response.data[0].embedding, dtype="float32")
+
+# --- Streamlit UI ---
+st.markdown('<div class="header"><h1>Sommelier India\'s Cellar Sage</h1></div>', unsafe_allow_html=True)
+
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'last_question' not in st.session_state:
+    st.session_state.last_question = ''
+
+chat_container = st.container()
+if not st.session_state.chat_history:
+    chat_container.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
+else:
+    for msg in st.session_state.chat_history:
+        if msg['role'] == 'user':
+            chat_container.markdown(f'<div style="background:#291010;color:#ac9c9c;padding:12px 18px;border-radius:18px 18px 5px 18px;margin-left:auto;margin-right:0;max-width:80%;word-wrap:break-word;box-shadow:0 2px 8px rgba(90,24,50,0.09);border:1px solid #7a1c3a;margin-bottom:10px;">{msg["content"]}</div>', unsafe_allow_html=True)
+        else:
+            chat_container.markdown(f'<div style="background:#fff;color:#2d0a18;padding:15px 20px;border-radius:18px 18px 18px 5px;border:1px solid #b7aeb4;max-width:90%;word-wrap:break-word;line-height:1.6;box-shadow:0 2px 10px rgba(90,24,50,0.04);margin-bottom:20px;">{msg["content"]}</div>', unsafe_allow_html=True)
+
+st.markdown('<div style="margin-top:20px;"></div>', unsafe_allow_html=True)
+with st.form(key="question_form", clear_on_submit=True):
+    question = st.text_input("", placeholder="What would you like to know about wine?", key="question_input")
+    ask_button = st.form_submit_button("Ask")
+
+if ask_button and question:
+    st.session_state.last_question = question
+    st.session_state.chat_history.append({"role": "user", "content": question})
+    query_embedding = embed_query(question)
+    D, I = index.search(np.array([query_embedding]), k=3)
+    relevant_chunks = []
+    for idx in I[0]:
+        if idx < len(chunks):
+            chunk = chunks[idx]
+            truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
+            relevant_chunks.append(truncated_chunk)
+    relevant = "\n\n".join(relevant_chunks)
+    prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=400,
+            temperature=0.3
+        )
+        answer = response.choices[0].message.content
+        st.session_state.chat_history.append({"role": "assistant", "content": answer})
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
+        st.session_state.chat_history.append({"role": "assistant", "content": error_message})
 
 def calculate_recency_bias_fast(chunk):
     """Fast recency bias calculation - optimized for speed"""
