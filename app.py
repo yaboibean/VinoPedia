@@ -139,74 +139,16 @@ with col2:
 
     # Show thinking indicator if active
     if st.session_state.thinking:
-        st.markdown('<div style="margin:10px 0 20px 0; color:#a8325a; font-size:1.1em; font-weight:600; display:flex; align-items:center;"><span class="spinner" style="display:inline-block;width:22px;height:22px;border:3px solid #e9ecef;border-top:3px solid #a8325a;border-radius:50%;margin-right:10px;animation:spin 1s linear infinite;"></span>Thinking...</div>', unsafe_allow_html=True)
+        st.markdown('''
+        <div style="margin:18px 0 28px 0; color:#fff; background:#a8325a; border-radius:18px; padding:18px 24px; font-size:1.25em; font-weight:700; display:flex; align-items:center; box-shadow:0 2px 12px rgba(168,50,90,0.13); border:2px solid #fff; justify-content:center;">
+            <span class="spinner" style="display:inline-block;width:28px;height:28px;border:4px solid #e9ecef;border-top:4px solid #fff;border-radius:50%;margin-right:18px;animation:spin 1s linear infinite;"></span>
+            <span>Thinking... Please wait while I search the wine archives and generate your answer.</span>
+        </div>
+        ''', unsafe_allow_html=True)
 
     # Add spinner CSS
     st.markdown('''<style>@keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>''', unsafe_allow_html=True)
 
-    if not last_question:
-        # Commonly asked questions
-        return [
-            "What are the best wine pairings for summer dishes?",
-            "How should I store my wine collection properly?",
-            "What's the difference between Old World and New World wines?"
-        ]
-    prompt = f"Give me 3 followup questions based on this: {last_question}\nFormat as a simple list:\n1. [question]\n2. [question]\n3. [question]"
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=100,
-            temperature=0.7
-        )
-        answer = response.choices[0].message.content.strip()
-        lines = answer.split('\n')
-        questions = []
-        for line in lines:
-            if line.strip() and any(line.startswith(f'{i}.') for i in range(1, 4)):
-                q = line.split('.', 1)[1].strip()
-                questions.append(q)
-        # Fallbacks if not enough
-        fallback_questions = [
-            "Tell me more about wine terminology",
-            "What are some wine tasting techniques?",
-            "How do wine regions affect flavor?"
-        ]
-        for fallback in fallback_questions:
-            if len(questions) >= 3:
-                break
-            if fallback not in questions:
-                questions.append(fallback)
-        return questions[:3]
-    except Exception as e:
-        return [
-            "Tell me more about wine styles",
-            "What are some wine tasting tips?",
-            "How do I choose the right wine?"
-        ]
-        import re
-        
-        # Look for years 2020+ (most relevant)
-        recent_years = re.findall(r'\b(202[0-9])\b', chunk)
-        if recent_years:
-            latest_year = max(int(year) for year in recent_years)
-            if latest_year >= 2024:
-                return 1.0
-            elif latest_year >= 2022:
-                return 0.8
-            else:
-                return 0.6
-        
-        # Quick fallback - look for any year pattern
-        if '202' in chunk:  # Any 2020s mention
-            return 0.7
-        elif '201' in chunk:  # Any 2010s mention
-            return 0.4
-        else:
-            return 0.3  # Default
-            
-    except Exception:
-        return 0.3  # Default on any error
 
 def calculate_recency_bias(chunk):
     """Calculate recency bias score - higher score for more recent content"""
@@ -322,25 +264,36 @@ def generate_followup_questions(last_question):
 with col3:
     st.markdown('<div class="followup-section" style="margin-top:32px;">', unsafe_allow_html=True)
     st.markdown('<h3 style="color:#291010; font-size:1.18em; font-weight:700; letter-spacing:0.5px; text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea;">Follow-up & Common Questions</h3>', unsafe_allow_html=True)
-    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
-    for i, q in enumerate(followup_questions):
-        btn_style = (
-            "background:linear-gradient(90deg,#fff 60%,#c9c7c7 100%);color:#291010;"
-            "border:1.5px solid #291010;border-radius:32px;padding:14px 24px;font-size:17px;cursor:pointer;margin-bottom:8px;font-weight:500;outline:none;width:100%;text-align:left;"
-            "transition:background 0.2s,color 0.2s,box-shadow 0.2s,border-color 0.2s,transform 0.15s;"
-        )
-        hover_style = (
-            f"<style>div[data-testid='stButton'] button[data-testid='followup_btn_{i}']:hover {{"
-            "background:linear-gradient(90deg,#a8325a 10%,#291010 90%) !important;"
-            "color:#fff !important;border-color:#a8325a !important;box-shadow:0 3px 10px rgba(168,50,90,0.09);"
-            "transform:translateY(-1px) scale(1.01);}}</style>"
-        )
-        st.markdown(hover_style, unsafe_allow_html=True)
-        if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question"):
-            if not st.session_state.get('thinking', False):
-                st.session_state.last_question = q
-                st.session_state.chat_history.append({"role": "user", "content": q})
-                st.session_state.thinking = True
-                st.experimental_rerun()
+    import time
+    thinking = st.session_state.get('thinking', False)
+    # Show a prominent thinking indicator in the right panel if thinking
+    if thinking:
+        st.markdown('''
+        <div style="margin:18px 0 28px 0; color:#fff; background:#a8325a; border-radius:18px; padding:18px 24px; font-size:1.15em; font-weight:700; display:flex; align-items:center; box-shadow:0 2px 12px rgba(168,50,90,0.13); border:2px solid #fff; justify-content:center;">
+            <span class="spinner" style="display:inline-block;width:22px;height:22px;border:3px solid #e9ecef;border-top:3px solid #fff;border-radius:50%;margin-right:14px;animation:spin 1s linear infinite;"></span>
+            <span>Generating follow-up questions...</span>
+        </div>
+        ''', unsafe_allow_html=True)
+    else:
+        followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+        for i, q in enumerate(followup_questions):
+            btn_style = (
+                "background:linear-gradient(90deg,#fff 60%,#c9c7c7 100%);color:#291010;"
+                "border:1.5px solid #291010;border-radius:32px;padding:14px 24px;font-size:17px;cursor:pointer;margin-bottom:8px;font-weight:500;outline:none;width:100%;text-align:left;"
+                "transition:background 0.2s,color 0.2s,box-shadow 0.2s,border-color 0.2s,transform 0.15s;"
+            )
+            hover_style = (
+                f"<style>div[data-testid='stButton'] button[data-testid='followup_btn_{i}']:hover {{"
+                "background:linear-gradient(90deg,#a8325a 10%,#291010 90%) !important;"
+                "color:#fff !important;border-color:#a8325a !important;box-shadow:0 3px 10px rgba(168,50,90,0.09);"
+                "transform:translateY(-1px) scale(1.01);}}</style>"
+            )
+            st.markdown(hover_style, unsafe_allow_html=True)
+            if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question"):
+                if not st.session_state.get('thinking', False):
+                    st.session_state.last_question = q
+                    st.session_state.chat_history.append({"role": "user", "content": q})
+                    st.session_state.thinking = True
+                    st.experimental_rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
