@@ -288,8 +288,12 @@ if thinking:
     st.markdown('''<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>''', unsafe_allow_html=True)
 else:
     followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+    import hashlib
+    last_q = st.session_state.get('last_question', '')
+    key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
     for i, q in enumerate(followup_questions):
-        if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question", disabled=thinking):
+        btn_key = f"followup_btn_{key_prefix}_{i}"
+        if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
             if not thinking:
                 st.session_state.last_question = q
                 st.session_state.chat_history.append({"role": "user", "content": q})
