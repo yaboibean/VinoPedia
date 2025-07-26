@@ -360,41 +360,69 @@ def generate_followup_questions(last_question):
         ]
 
 
-# --- Follow-up and Common Questions (Right Panel) ---
-with col3:
-    st.markdown('<div class="followup-section" style="margin-top:32px;">', unsafe_allow_html=True)
-    st.markdown('<h3 style="color:#291010; font-size:1.18em; font-weight:700; letter-spacing:0.5px; text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea;">Follow-up & Common Questions</h3>', unsafe_allow_html=True)
-    import time
-    thinking = st.session_state.get('thinking', False)
-    # Show a prominent thinking indicator in the right panel if thinking
-    if thinking:
-        st.markdown('''
-        <div style="margin:10px 0 16px 0; color:#a8325a; background:#f7f3f6; border-radius:10px; padding:7px 14px; font-size:0.98em; font-weight:500; display:flex; align-items:center; border:1px solid #e9e3ea; justify-content:left;">
-            <span class="spinner" style="display:inline-block;width:15px;height:15px;border:2.5px solid #e9ecef;border-top:2.5px solid #a8325a;border-radius:50%;margin-right:8px;animation:spin 1s linear infinite;"></span>
-            <span>Generating follow-up questions...</span>
-        </div>
-        ''', unsafe_allow_html=True)
-    else:
-        followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
-        for i, q in enumerate(followup_questions):
-            btn_style = (
-                "background:linear-gradient(90deg,#fff 60%,#c9c7c7 100%);color:#291010;"
-                "border:1.5px solid #291010;border-radius:32px;padding:14px 24px;font-size:17px;cursor:pointer;margin-bottom:8px;font-weight:500;outline:none;width:100%;text-align:left;"
-                "transition:background 0.2s,color 0.2s,box-shadow 0.2s,border-color 0.2s,transform 0.15s;"
-            )
-            hover_style = (
-                f"<style>div[data-testid='stButton'] button[data-testid='followup_btn_{i}']:hover {{"
-                "background:linear-gradient(90deg,#a8325a 10%,#291010 90%) !important;"
-                "color:#fff !important;border-color:#a8325a !important;box-shadow:0 3px 10px rgba(168,50,90,0.09);"
-                "transform:translateY(-1px) scale(1.01);}}</style>"
-            )
-            st.markdown(hover_style, unsafe_allow_html=True)
-            # Disable button if thinking to prevent rerun recursion
-            if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question", disabled=st.session_state.get('thinking', False)):
-                if not st.session_state.get('thinking', False):
-                    st.session_state.last_question = q
-                    st.session_state.chat_history.append({"role": "user", "content": q})
-                    st.session_state.thinking = True
-                    st.experimental_rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Follow-up and Common Questions (Right Panel, floating/fixed) ---
+st.markdown('''<style>
+.followup-panel {
+    position: fixed;
+    top: 70px;
+    right: 48px;
+    width: 320px;
+    background: #f7f3f6;
+    border-radius: 18px;
+    box-shadow: 0 2px 16px rgba(90,24,50,0.09);
+    padding: 28px 22px 22px 22px;
+    z-index: 9999;
+    border: 1.5px solid #e9e3ea;
+}
+.followup-title {
+    color:#291010; font-size:1.18em; font-weight:700; letter-spacing:0.5px; text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea; margin-bottom: 18px;
+    font-family: 'Lato', 'Arial', sans-serif;
+}
+.followup-btn {
+    background:linear-gradient(90deg,#fff 60%,#c9c7c7 100%);
+    color:#291010;
+    border:1.5px solid #291010;
+    border-radius:32px;
+    padding:14px 24px;
+    font-size:17px;
+    cursor:pointer;
+    margin-bottom:8px;
+    font-weight:500;
+    outline:none;
+    width:100%;
+    text-align:left;
+    transition:background 0.2s,color 0.2s,box-shadow 0.2s,border-color 0.2s,transform 0.15s;
+    font-family: 'Lato', 'Arial', sans-serif;
+}
+.followup-btn:hover {
+    background:linear-gradient(90deg,#a8325a 10%,#291010 90%) !important;
+    color:#fff !important;
+    border-color:#a8325a !important;
+    box-shadow:0 3px 10px rgba(168,50,90,0.09);
+    transform:translateY(-1px) scale(1.01);
+}
+.followup-spinner {
+    margin:10px 0 16px 0; color:#a8325a; background:#f7f3f6; border-radius:10px; padding:7px 14px; font-size:0.98em; font-weight:500; display:flex; align-items:center; border:1px solid #e9e3ea; justify-content:left;
+}
+.followup-spinner .spinner {
+    display:inline-block;width:15px;height:15px;border:2.5px solid #e9ecef;border-top:2.5px solid #a8325a;border-radius:50%;margin-right:8px;animation:spin 1s linear infinite;
+}
+</style>''', unsafe_allow_html=True)
+
+st.markdown('<div class="followup-panel">', unsafe_allow_html=True)
+st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
+thinking = st.session_state.get('thinking', False)
+if thinking:
+    st.markdown('''<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>''', unsafe_allow_html=True)
+else:
+    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+    for i, q in enumerate(followup_questions):
+        if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question", disabled=thinking):
+            if not thinking:
+                st.session_state.last_question = q
+                st.session_state.chat_history.append({"role": "user", "content": q})
+                st.session_state.thinking = True
+                st.experimental_rerun()
+st.markdown('</div>', unsafe_allow_html=True)
 
