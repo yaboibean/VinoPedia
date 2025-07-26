@@ -292,6 +292,16 @@ if 'thinking' not in st.session_state:
 # --- Input row (Streamlit widgets rendered in HTML layout) ---
 if 'question_input_box' not in st.session_state:
     st.session_state.question_input_box = ""
+
+# Callback for Ask button
+def handle_ask():
+    q = st.session_state.question_input_box
+    if q:
+        st.session_state.last_question = q
+        st.session_state.question_input_box = ""
+        st.session_state.thinking = True
+        st.session_state.chat_history.append({"role": "user", "content": q})
+
 input_placeholder = st.empty()
 with input_placeholder.container():
     st.markdown('<div class="input-row">', unsafe_allow_html=True)
@@ -305,7 +315,7 @@ with input_placeholder.container():
             value=st.session_state.question_input_box
         )
     with input_col2:
-        ask_button = st.button("Ask", key="ask_button", use_container_width=True)
+        ask_button = st.button("Ask", key="ask_button", use_container_width=True, on_click=handle_ask)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Followup content (Streamlit buttons rendered in HTML layout) ---
@@ -353,13 +363,8 @@ main_box_html = """
 st.markdown(main_box_html.format(chat_content=chat_content).replace("{input_row}", "").replace("{followup_content}", ""), unsafe_allow_html=True)
 
 # --- Handle question submission and response ---
-if ask_button and question:
-    st.session_state.update({
-        "last_question": question,
-        "question_input_box": "",
-        "thinking": True
-    })
-    st.session_state.chat_history.append({"role": "user", "content": question})
+if st.session_state.get("thinking", False) and st.session_state.get("last_question", ""):
+    question = st.session_state.last_question
     with st.spinner("Thinking..."):
         try:
             query_embedding = embed_query(question)
