@@ -102,121 +102,203 @@ def embed_query(query):
     )
     return np.array(response.data[0].embedding, dtype="float32")
 
-# --- Custom CSS for exact match ---
+
+# --- Modern, Clean CSS ---
 st.markdown('''<style>
 body, .stApp {
     background: radial-gradient(ellipse at center, #3d0d16 0%, #2a0710 100%) !important;
 }
-.main-box {
+.wine-main-card {
     background: #f7f3f3;
-    border-radius: 22px;
-    width: 1100px;
+    border-radius: 28px;
+    width: 900px;
     margin: 48px auto 0 auto;
-    box-shadow: 0 4px 36px rgba(60,0,20,0.13), 0 1.5px 8px rgba(60,0,20,0.07);
-    min-height: 900px;
+    box-shadow: 0 6px 36px rgba(60,0,20,0.13), 0 2px 12px rgba(60,0,20,0.09);
+    min-height: 700px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     position: relative;
-    padding: 44px 54px 44px 54px;
+    padding: 36px 36px 24px 36px;
     border: 1.5px solid #e9e3ea;
 }
-.header-title {
+.wine-title {
     text-align: center;
-    font-size: 2.9em;
+    font-size: 2.5em;
     font-weight: 900;
     color: #2a0710;
-    margin-bottom: 22px;
+    margin-bottom: 10px;
     margin-top: 0px;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.1px;
     font-family: 'Lato', 'Arial', sans-serif;
     text-shadow: 0 2px 8px #f7e9f3, 0 1px 0 #fff;
 }
-.main-content-row {
+.wine-desc {
+    text-align: center;
+    color: #7a2a3a;
+    font-size: 1.15em;
+    font-family: 'Lato', 'Arial', sans-serif;
+    font-weight: 600;
+    margin-bottom: 24px;
+    text-shadow: 0 1px 0 #fff, 0 2px 6px #e9e3ea;
+}
+.wine-content-row {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
     justify-content: stretch;
     width: 100%;
-    flex: 1;
-    min-height: 600px;
     gap: 32px;
 }
-.main-chat-col {
+.wine-chat-col {
     flex: 2;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 0 0 0;
-    min-height: 600px;
+    align-items: stretch;
+    min-height: 400px;
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 2px 18px rgba(60,0,20,0.07);
     border: 1.5px solid #ede6f0;
-    margin-bottom: 0;
-    margin-top: 0;
+    padding: 24px 18px 18px 18px;
     position: relative;
 }
-.main-followup-col {
+.wine-chat-area {
     flex: 1;
-    min-width: 320px;
-    max-width: 340px;
-    margin-left: 32px;
-    margin-top: 24px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+    min-height: 120px;
 }
-.chat-area-bg {
-    background: #d3d3d3;
-    border-radius: 16px;
-    min-height: 420px;
-    max-width: 800px;
-    margin: 0 auto 0 auto;
-    padding: 32px 24px 0 24px;
+.wine-chat-row {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: flex-end;
+    margin-bottom: 16px;
+    gap: 10px;
+}
+.wine-avatar {
+    font-size: 1.3em;
+    margin-bottom: 2px;
+}
+.wine-bubble-user {
+    background: #f7e3ea;
+    color: #2a0710;
+    padding: 10px 18px 10px 14px;
+    border-radius: 16px 16px 16px 6px;
+    font-size: 1.04em;
+    font-family: Lato,Arial,sans-serif;
+    display: inline-block;
+    max-width: 80%;
+    box-shadow: 0 1.5px 8px rgba(60,0,20,0.04);
+}
+.wine-bubble-assistant {
+    background: #e9e3ea;
+    color: #1a1a1a;
+    padding: 10px 18px 10px 14px;
+    border-radius: 16px 16px 6px 16px;
+    font-size: 1.04em;
+    font-family: Lato,Arial,sans-serif;
+    display: inline-block;
+    max-width: 80%;
+    box-shadow: 0 1.5px 8px rgba(60,0,20,0.04);
+}
+.wine-input-bar {
+    width: 100%;
+    display: flex;
+    justify-content: center;
     align-items: center;
-    justify-content: flex-start;
+    margin-top: 8px;
 }
-.empty-state {
-    color: #7a2a3a;
-    font-size: 1.18em;
-    text-align: center;
-    margin-top: 38px;
+.wine-input-inner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background: #f7f3f6;
+    border-radius: 14px;
+    box-shadow: 0 1.5px 8px rgba(60,0,20,0.06);
+    border: 1.2px solid #e9e3ea;
+    padding: 8px 14px 8px 14px;
+    width: 100%;
+    max-width: 520px;
+    gap: 10px;
+}
+.wine-input-inner input {
+    border: none !important;
+    background: transparent !important;
+    font-size: 1.04em;
+    color: #2a0710 !important;
+    font-family: Lato,Arial,sans-serif;
+}
+.stButton > button {
+    background: linear-gradient(120deg, #a8325a 60%, #7a2a3a 100%);
+    color: #fff;
+    border: none;
+    border-radius: 18px !important;
+    font-size: 1.04em;
+    font-weight: 700;
+    padding: 8px 28px;
+    box-shadow: 0 2px 8px rgba(60,0,20,0.08);
+    transition: background 0.2s;
+}
+.stButton > button:hover {
+    background: linear-gradient(120deg, #7a2a3a 60%, #a8325a 100%);
+}
+.wine-followup-col {
+    flex: 1;
+    min-width: 240px;
+    max-width: 280px;
+    margin-left: 24px;
+    margin-top: 0;
+}
+.wine-followup-panel {
+    background: linear-gradient(120deg, #f7f3f6 80%, #fff 100%);
+    border-radius: 18px;
+    box-shadow: 0 2px 16px rgba(90,24,50,0.09);
+    padding: 22px 16px 16px 16px;
+    border: 1.5px solid #e9e3ea;
+}
+.wine-followup-title {
+    color:#291010; 
+    font-size:1.08em; 
+    font-weight:700; 
+    letter-spacing:0.5px; 
+    text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea; 
+    margin-bottom: 14px;
     font-family: 'Lato', 'Arial', sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.2px;
-    text-shadow: 0 1px 0 #fff, 0 2px 6px #e9e3ea;
 }
-.input-row {
+.wine-followup-btn-row {
+    margin-bottom: 12px;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    margin: 32px auto 0 auto;
-    max-width: 700px;
+}
+.wine-followup-btn-row .stButton > button {
     width: 100%;
-    gap: 16px;
-    background: #f7f3f6;
-    border-radius: 12px;
-    box-shadow: 0 1.5px 8px rgba(60,0,20,0.06);
-    padding: 12px 18px 12px 18px;
-    border: 1.2px solid #e9e3ea;
+    border-radius: 24px !important;
+    background: #fff;
+    color: #7a2a3a;
+    border: 1.5px solid #7a2a3a;
+    box-shadow: 0 1.5px 8px rgba(60,0,20,0.04);
+    font-size: 1.01em;
+    font-weight: 600;
+    padding: 8px 12px;
+    margin: 0;
+    transition: background 0.2s, color 0.2s;
 }
-.followup-panel {
-    background: #f7f3f6;
-    border-radius: 18px;
-    box-shadow: 0 2px 16px rgba(90,24,50,0.09);
-    padding: 28px 22px 22px 22px;
-    border: 1.5px solid #e9e3ea;
+.wine-followup-btn-row .stButton > button:hover {
+    background: #f7e3ea;
+    color: #2a0710;
 }
-.followup-title {
-    color:#291010; 
-    font-size:1.18em; 
-    font-weight:700; 
-    letter-spacing:0.5px; 
-    text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea; 
-    margin-bottom: 18px;
+.wine-empty {
+    color: #7a2a3a;
+    font-size: 1.12em;
+    text-align: center;
+    margin-top: 24px;
     font-family: 'Lato', 'Arial', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    text-shadow: 0 1px 0 #fff, 0 2px 6px #e9e3ea;
 }
 .followup-spinner {
     margin:10px 0 16px 0; 
@@ -261,32 +343,47 @@ st.markdown('''
   <div class="modern-content-row">
     <div class="modern-chat-col">
       <div class="modern-chat-area">
+    "",
+    placeholder="What would you like to know about wine?",
+    key="question_input_box",
+    label_visibility="collapsed",
+        <div class="modern-followup-title">Popular Questions</div>
+''', unsafe_allow_html=True)
+if ask_button and question:
+
+# --- Modern Main Card Layout ---
+st.markdown('''
+<div class="wine-main-card">
+  <div class="wine-title">Sommelier India's Cellar Sage</div>
+  <div class="wine-desc">Tap into decades of wine wisdom from the Sommelier India Archives</div>
+  <div class="wine-content-row">
+    <div class="wine-chat-col">
+      <div class="wine-chat-area">
 ''', unsafe_allow_html=True)
 
 # --- Chat area ---
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if not st.session_state.chat_history:
-    st.markdown('<div class="empty-state modern-empty">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
+    st.markdown('<div class="wine-empty">No conversation yet. Ask your first wine question!</div>', unsafe_allow_html=True)
 else:
     for i, msg in enumerate(st.session_state.chat_history):
         is_user = msg['role'] == 'user'
-        bubble_class = 'modern-bubble-user' if is_user else 'modern-bubble-assistant'
+        bubble_class = 'wine-bubble-user' if is_user else 'wine-bubble-assistant'
         avatar = '🍷' if is_user else '🤖'
         st.markdown(f'''
-        <div class="modern-chat-row">
-          <span class="modern-avatar">{avatar}</span>
+        <div class="wine-chat-row">
+          <span class="wine-avatar">{avatar}</span>
           <span class="{bubble_class}">{msg["content"]}</span>
         </div>
         ''', unsafe_allow_html=True)
 
-
 st.markdown('''</div>
-      <div class="modern-input-bar">
-        <div class="modern-input-inner">
-''', unsafe_allow_html=True)
+        try:
+            query_embedding = embed_query(question)
+            D, I = index.search(np.array([query_embedding]), k=3)
 
-# --- Input bar (styled to match screenshot) ---
+# --- Input bar ---
 question = st.text_input(
     "",
     placeholder="What would you like to know about wine?",
@@ -301,13 +398,12 @@ ask_button = st.button(
     help="Submit your wine question"
 )
 st.markdown('''</div></div></div>
-    </div>
-''', unsafe_allow_html=True)
+            relevant_chunks = []
 
 # --- Follow-up panel (right column) ---
-st.markdown('''    <div class="modern-followup-col">
-      <div class="modern-followup-panel">
-        <div class="modern-followup-title">Popular Questions</div>
+st.markdown('''    <div class="wine-followup-col">
+      <div class="wine-followup-panel">
+        <div class="wine-followup-title">Popular Questions</div>
 ''', unsafe_allow_html=True)
 thinking = st.session_state.get('thinking', False)
 if thinking:
@@ -319,8 +415,7 @@ else:
     key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
     for i, q in enumerate(followup_questions):
         btn_key = f"followup_btn_{key_prefix}_{i}"
-        # Button with custom style to match screenshot
-        st.markdown(f'''<div class="modern-followup-btn-row">''', unsafe_allow_html=True)
+        st.markdown(f'''<div class="wine-followup-btn-row">''', unsafe_allow_html=True)
         if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
             if not thinking:
                 st.session_state.last_question = q
@@ -330,23 +425,11 @@ else:
                 st.experimental_rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown('''      </div>
+            for idx in I[0]:
     </div>
   </div>
 </div>
 ''', unsafe_allow_html=True)
-
-# --- Handle question submission and response ---
-if ask_button and question:
-    st.session_state.last_question = question
-    st.session_state.chat_history.append({"role": "user", "content": question})
-    st.session_state.question_input_box = ""
-    with st.spinner("Thinking..."):
-        try:
-            query_embedding = embed_query(question)
-            D, I = index.search(np.array([query_embedding]), k=3)
-            relevant_chunks = []
-            for idx in I[0]:
                 if idx < len(chunks):
                     chunk = chunks[idx]
                     truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
