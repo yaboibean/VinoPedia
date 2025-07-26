@@ -282,6 +282,12 @@ if not st.session_state.chat_history:
     chat_content = '<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>'
 else:
     chat_content = ''  # (Add chat bubbles here if needed)
+if 'last_question' not in st.session_state:
+    st.session_state['last_question'] = ""
+if 'question_input_box' not in st.session_state:
+    st.session_state['question_input_box'] = ""
+if 'thinking' not in st.session_state:
+    st.session_state['thinking'] = False
 
 # --- Input row (Streamlit widgets rendered in HTML layout) ---
 if 'question_input_box' not in st.session_state:
@@ -322,6 +328,13 @@ with followup_placeholder.container():
                         "question_input_box": "",
                         "thinking": True
                     })
+                    st.session_state.chat_history.append({"role": "user", "content": q})
+                    st.experimental_rerun()
+            if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
+                if not thinking:
+                    st.session_state['last_question'] = q
+                    st.session_state['question_input_box'] = ""
+                    st.session_state['thinking'] = True
                     st.session_state.chat_history.append({"role": "user", "content": q})
                     st.experimental_rerun()
             st.markdown('<div style="margin-bottom:8px;"></div>', unsafe_allow_html=True)
