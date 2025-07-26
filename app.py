@@ -102,102 +102,152 @@ def embed_query(query):
     )
     return np.array(response.data[0].embedding, dtype="float32")
 
-# --- Streamlit UI ---
-st.markdown('<div class="header"><h1>Sommelier India\'s Cellar Sage</h1></div>', unsafe_allow_html=True)
 
+# --- Custom CSS for exact match ---
+st.markdown('''<style>
+body, .stApp {
+    background: radial-gradient(ellipse at center, #3d0d16 0%, #2a0710 100%) !important;
+}
+.main-container-bg {
+    background: #f7f3f3;
+    border-radius: 20px;
+    max-width: 1100px;
+    margin: 32px auto 32px auto;
+    padding: 32px 0 32px 0;
+    box-shadow: 0 2px 32px rgba(60,0,20,0.10);
+    min-height: 90vh;
+}
+.header-title {
+    text-align: center;
+    font-size: 2.8em;
+    font-weight: 800;
+    color: #2a0710;
+    margin-bottom: 18px;
+    margin-top: 8px;
+    letter-spacing: 1px;
+    font-family: 'Lato', 'Arial', sans-serif;
+}
+.chat-area-bg {
+    background: #d3d3d3;
+    border-radius: 16px;
+    min-height: 420px;
+    max-width: 800px;
+    margin: 0 auto 0 auto;
+    padding: 32px 24px 0 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+.empty-state {
+    color: #1a1a1a;
+    font-size: 1.08em;
+    text-align: center;
+    margin-top: 24px;
+    font-family: 'Lato', 'Arial', sans-serif;
+}
+.input-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 24px auto 0 auto;
+    max-width: 800px;
+    width: 100%;
+    gap: 16px;
+}
+.input-box {
+    flex: 1;
+    border-radius: 24px;
+    border: 2px solid #3d0d16;
+    padding: 12px 18px;
+    font-size: 1.08em;
+    background: #f7f3f3;
+    color: #1a1a1a;
+    outline: none;
+    font-family: 'Lato', 'Arial', sans-serif;
+}
+.ask-btn {
+    background: linear-gradient(90deg,#7a1c3a 0%,#3d0d16 100%);
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    padding: 10px 36px;
+    font-size: 1.18em;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Lato', 'Arial', sans-serif;
+    box-shadow: 0 2px 8px rgba(90,24,50,0.09);
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.ask-btn:active {
+    background: linear-gradient(90deg,#3d0d16 0%,#7a1c3a 100%);
+}
+</style>''', unsafe_allow_html=True)
+
+# --- Main container ---
+st.markdown('<div class="main-container-bg">', unsafe_allow_html=True)
+st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
+
+# --- Centered chat area ---
+st.markdown('<div class="chat-area-bg">', unsafe_allow_html=True)
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
-if 'last_question' not in st.session_state:
-    st.session_state.last_question = ''
+if not st.session_state.chat_history:
+    st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
+# (If you want to render chat bubbles, add here)
+st.markdown('</div>', unsafe_allow_html=True)
 
-
-
-# --- Two-column layout: Chat (center), Questions (right) ---
-col1, col2, col3 = st.columns([0.2, 1, 0.7], gap="large")
-
-# --- Chat Section (Center Panel) ---
-with col2:
-    chat_container = st.container()
-    if not st.session_state.chat_history:
-        chat_container.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
-    else:
-        chat_container.markdown('<style>'
-            '.chat-bubble {display:flex;align-items:flex-end;margin-bottom:14px;}'
-            '.chat-bubble.user {justify-content:flex-end;}'
-            '.chat-bubble.assistant {justify-content:flex-start;}'
-            '.bubble-content {padding:13px 20px;border-radius:18px;max-width:75vw;min-width:40px;box-shadow:0 2px 8px rgba(90,24,50,0.09);font-size:1.08em;line-height:1.6;}'
-            '.bubble-content.user {background:#291010;color:#fff;border-bottom-right-radius:6px;border:1.5px solid #7a1c3a;}'
-            '.bubble-content.assistant {background:#fff;color:#2d0a18;border-bottom-left-radius:6px;border:1.5px solid #b7aeb4;}'
-            '.avatar {width:36px;height:36px;border-radius:50%;background:#e9e3ea;display:flex;align-items:center;justify-content:center;font-size:1.2em;font-weight:700;margin:0 10px;box-shadow:0 1px 4px #e9e3ea;}'
-            '</style>', unsafe_allow_html=True)
-        for msg in st.session_state.chat_history:
-            if msg['role'] == 'user':
-                chat_container.markdown(
-                    f'<div class="chat-bubble user">'
-                    f'<div class="bubble-content user">{msg["content"]}</div>'
-                    f'<div class="avatar" title="You" style="background:#7a1c3a;color:#fff;">🧑</div>'
-                    f'</div>', unsafe_allow_html=True)
-            else:
-                chat_container.markdown(
-                    f'<div class="chat-bubble assistant">'
-                    f'<div class="avatar" title="Cellar Sage" style="background:#fff;color:#a8325a;border:1.5px solid #a8325a;">🍷</div>'
-                    f'<div class="bubble-content assistant">{msg["content"]}</div>'
-                    f'</div>', unsafe_allow_html=True)
-
-    st.markdown('<div style="margin-top:20px;"></div>', unsafe_allow_html=True)
-
-    # --- Thinking indicator state ---
-    if 'thinking' not in st.session_state:
-        st.session_state.thinking = False
-
-
-    # --- Chatbot input (no rerun, immediate response) ---
-    if 'question_input' not in st.session_state:
-        st.session_state.question_input = ""
-
-    # Add spinner CSS
-    st.markdown('''<style>@keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>''', unsafe_allow_html=True)
-
+# --- Input row at the bottom of chat area ---
+if 'question_input_box' not in st.session_state:
+    st.session_state.question_input_box = ""
+st.markdown('<div class="input-row">', unsafe_allow_html=True)
+col_input, col_btn = st.columns([8,2], gap="small")
+with col_input:
     question = st.text_input(
-        "Ask a wine question",
+        "",
         placeholder="What would you like to know about wine?",
-        key="question_input",
+        key="question_input_box",
         label_visibility="collapsed",
-        value=st.session_state.question_input
+        value=st.session_state.question_input_box
     )
+with col_btn:
     ask_button = st.button("Ask", key="ask_button")
+st.markdown('</div>', unsafe_allow_html=True)
 
-    # Handle question submission and response inline
-    if ask_button and question:
-        st.session_state.last_question = question
-        st.session_state.chat_history.append({"role": "user", "content": question})
-        st.session_state.question_input = ""  # Clear before rerun
-        with st.spinner("Thinking..."):
-            try:
-                query_embedding = embed_query(question)
-                D, I = index.search(np.array([query_embedding]), k=3)
-                relevant_chunks = []
-                for idx in I[0]:
-                    if idx < len(chunks):
-                        chunk = chunks[idx]
-                        truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
-                        relevant_chunks.append(truncated_chunk)
-                relevant = "\n\n".join(relevant_chunks)
-                prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=400,
-                    temperature=0.3
-                )
-                answer = response.choices[0].message.content
-                st.session_state.chat_history.append({"role": "assistant", "content": answer})
-            except Exception as e:
-                import traceback
-                tb = traceback.format_exc()
-                error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
-                st.session_state.chat_history.append({"role": "assistant", "content": error_message})
-        st.experimental_rerun()
+# --- Handle question submission and response ---
+if ask_button and question:
+    st.session_state.last_question = question
+    st.session_state.chat_history.append({"role": "user", "content": question})
+    st.session_state.question_input_box = ""
+    with st.spinner("Thinking..."):
+        try:
+            query_embedding = embed_query(question)
+            D, I = index.search(np.array([query_embedding]), k=3)
+            relevant_chunks = []
+            for idx in I[0]:
+                if idx < len(chunks):
+                    chunk = chunks[idx]
+                    truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
+                    relevant_chunks.append(truncated_chunk)
+            relevant = "\n\n".join(relevant_chunks)
+            prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=400,
+                temperature=0.3
+            )
+            answer = response.choices[0].message.content
+            st.session_state.chat_history.append({"role": "assistant", "content": answer})
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
+            st.session_state.chat_history.append({"role": "assistant", "content": error_message})
+    st.experimental_rerun()
+
+st.markdown('</div>', unsafe_allow_html=True)  # End main container
 
 
 def calculate_recency_bias(chunk):
