@@ -122,9 +122,8 @@ st.markdown('''<style>
 .main-box {
     background: #f7f3f3;
     border-radius: 20px;
-    width: 1300px;
-    min-width: 1100px;
-    margin: 32px 0 32px 0;
+    width: 1100px;
+    margin: 48px auto 0 auto;
     box-shadow: 0 2px 32px rgba(60,0,20,0.10);
     min-height: 900px;
     display: flex;
@@ -171,8 +170,7 @@ st.markdown('''<style>
 
 
 
-# --- Unified main container with everything inside ---
-st.markdown('<div class="main-flex-container">', unsafe_allow_html=True)
+# --- Single main box with all content inside ---
 st.markdown('<div class="main-box">', unsafe_allow_html=True)
 st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
 st.markdown('<div class="main-content-row">', unsafe_allow_html=True)
@@ -227,7 +225,6 @@ st.markdown('</div>', unsafe_allow_html=True)  # end followup-panel
 st.markdown('</div>', unsafe_allow_html=True)  # end main-followup-col
 st.markdown('</div>', unsafe_allow_html=True)  # end main-content-row
 st.markdown('</div>', unsafe_allow_html=True)  # end main-box
-st.markdown('</div>', unsafe_allow_html=True)  # end main-flex-container
 
 # --- Handle question submission and response ---
 if ask_button and question:
