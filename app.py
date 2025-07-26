@@ -98,11 +98,12 @@ except Exception as e:
 def embed_query(query):
     response = client.embeddings.create(
         input=[query],
-    cursor: pointer;
-    font-family: 'Lato', 'Arial', sans-serif;
-    box-shadow: 0 2px 8px rgba(90,24,50,0.09);
-    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-}
+        model="text-embedding-3-small"
+    )
+    return np.array(response.data[0].embedding, dtype="float32")
+
+# --- Custom CSS for exact match ---
+st.markdown('''<style>
 .ask-btn:active {
     background: linear-gradient(90deg,#3d0d16 0%,#7a1c3a 100%);
 }
