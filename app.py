@@ -236,26 +236,7 @@ body, .stApp {
 # --- Single main box with all content inside using Streamlit primitives only ---
 main_box = st.container()
 with main_box:
-    st.markdown(
-        """
-        <style>
-        div[data-testid="stVerticalBlock"] > div:first-child {
-            background: #f7f3f3;
-            border-radius: 20px;
-            width: 1100px;
-            margin: 48px auto 0 auto;
-            box-shadow: 0 2px 32px rgba(60,0,20,0.10);
-            min-height: 900px;
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            position: relative;
-            padding: 40px 48px 40px 48px;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="main-box">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
     chat_col, followup_col = st.columns([2, 1], gap="large")
     with chat_col:
@@ -300,6 +281,7 @@ with main_box:
                         st.session_state.chat_history.append({"role": "user", "content": q})
                         st.session_state.thinking = True
                         st.experimental_rerun()
+    st.markdown('</div>', unsafe_allow_html=True)  # end main-box
 
 # --- Handle question submission and response ---
 if ask_button and question:
