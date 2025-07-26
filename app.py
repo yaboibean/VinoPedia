@@ -230,57 +230,58 @@ body, .stApp {
 
 
 
-# --- Single main box with all content inside ---
-
 st.markdown('<div class="main-box">', unsafe_allow_html=True)
-st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
-st.markdown('<div class="main-content-row">', unsafe_allow_html=True)
-st.markdown('<div class="main-chat-col">', unsafe_allow_html=True)
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-if not st.session_state.chat_history:
-    st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
-# (If you want to render chat bubbles, add here)
-
-# --- Input row at the bottom of chat area ---
-if 'question_input_box' not in st.session_state:
-    st.session_state.question_input_box = ""
-st.markdown('<div class="input-row">', unsafe_allow_html=True)
-col_input, col_btn = st.columns([8,2], gap="small")
-with col_input:
-    question = st.text_input(
-        "",
-        placeholder="What would you like to know about wine?",
-        key="question_input_box",
-        label_visibility="collapsed",
-        value=st.session_state.question_input_box
-    )
-with col_btn:
-    ask_button = st.button("Ask", key="ask_button")
-st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)  # end main-chat-col
-
 st.markdown('<div class="main-followup-col">', unsafe_allow_html=True)
-st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
-thinking = st.session_state.get('thinking', False)
-if thinking:
-    st.markdown('''<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>''', unsafe_allow_html=True)
-else:
-    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
-    import hashlib
-    last_q = st.session_state.get('last_question', '')
-    key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
-    for i, q in enumerate(followup_questions):
-        btn_key = f"followup_btn_{key_prefix}_{i}"
-        if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
-            if not thinking:
-                st.session_state.last_question = q
-                st.session_state.chat_history.append({"role": "user", "content": q})
-                st.session_state.thinking = True
-                st.experimental_rerun()
-st.markdown('</div>', unsafe_allow_html=True)  # end main-followup-col
-st.markdown('</div>', unsafe_allow_html=True)  # end main-content-row
-st.markdown('</div>', unsafe_allow_html=True)  # end main-box
+
+# --- Single main box with all content inside using st.container() ---
+with st.container():
+    st.markdown('<div class="main-box">', unsafe_allow_html=True)
+    st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
+    # Use columns for chat and followup layout
+    chat_col, followup_col = st.columns([2, 1], gap="large")
+    with chat_col:
+        if 'chat_history' not in st.session_state:
+            st.session_state.chat_history = []
+        if not st.session_state.chat_history:
+            st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
+        # (If you want to render chat bubbles, add here)
+
+        # --- Input row at the bottom of chat area ---
+        if 'question_input_box' not in st.session_state:
+            st.session_state.question_input_box = ""
+        st.markdown('<div class="input-row">', unsafe_allow_html=True)
+        col_input, col_btn = st.columns([8,2], gap="small")
+        with col_input:
+            question = st.text_input(
+                "",
+                placeholder="What would you like to know about wine?",
+                key="question_input_box",
+                label_visibility="collapsed",
+                value=st.session_state.question_input_box
+            )
+        with col_btn:
+            ask_button = st.button("Ask", key="ask_button")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with followup_col:
+        st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
+        thinking = st.session_state.get('thinking', False)
+        if thinking:
+            st.markdown('''<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>''', unsafe_allow_html=True)
+        else:
+            followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+            import hashlib
+            last_q = st.session_state.get('last_question', '')
+            key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
+            for i, q in enumerate(followup_questions):
+                btn_key = f"followup_btn_{key_prefix}_{i}"
+                if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
+                    if not thinking:
+                        st.session_state.last_question = q
+                        st.session_state.chat_history.append({"role": "user", "content": q})
+                        st.session_state.thinking = True
+                        st.experimental_rerun()
+    st.markdown('</div>', unsafe_allow_html=True)  # end main-box
 
 # --- Handle question submission and response ---
 if ask_button and question:
