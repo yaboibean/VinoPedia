@@ -102,35 +102,37 @@ def embed_query(query):
     )
     return np.array(response.data[0].embedding, dtype="float32")
 
-# --- Custom CSS for exact match ---
+# --- Custom CSS for modern magazine-inspired layout (not a chat UI) ---
 st.markdown('''<style>
 body, .stApp {
-    background: radial-gradient(ellipse at center, #3d0d16 0%, #2a0710 100%) !important;
+    background: linear-gradient(135deg, #3d0d16 0%, #2a0710 100%) !important;
 }
 .main-box {
     background: #f7f3f3;
-    border-radius: 22px;
-    width: 1100px;
+    border-radius: 28px;
+    width: 1200px;
     margin: 48px auto 0 auto;
-    box-shadow: 0 4px 36px rgba(60,0,20,0.13), 0 1.5px 8px rgba(60,0,20,0.07);
+    box-shadow: 0 6px 40px rgba(60,0,20,0.13), 0 2px 12px rgba(60,0,20,0.09);
     min-height: 900px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     position: relative;
-    padding: 44px 54px 44px 54px;
+    padding: 54px 64px 54px 64px;
     border: 1.5px solid #e9e3ea;
 }
 .header-title {
-    text-align: center;
-    font-size: 2.9em;
+    text-align: left;
+    font-size: 3.1em;
     font-weight: 900;
     color: #2a0710;
-    margin-bottom: 22px;
+    margin-bottom: 32px;
     margin-top: 0px;
-    letter-spacing: 1.2px;
-    font-family: 'Lato', 'Arial', sans-serif;
+    letter-spacing: 1.5px;
+    font-family: 'Playfair Display', 'Lato', 'Arial', serif;
     text-shadow: 0 2px 8px #f7e9f3, 0 1px 0 #fff;
+    border-left: 8px solid #a8325a;
+    padding-left: 24px;
 }
 .main-content-row {
     display: flex;
@@ -140,52 +142,61 @@ body, .stApp {
     width: 100%;
     flex: 1;
     min-height: 600px;
-    gap: 32px;
+    gap: 40px;
 }
 .main-chat-col {
-    flex: 2;
+    flex: 2.2;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
+    align-items: flex-start;
+    justify-content: flex-start;
     padding: 0 0 0 0;
     min-height: 600px;
     background: #fff;
-    border-radius: 18px;
+    border-radius: 22px;
     box-shadow: 0 2px 18px rgba(60,0,20,0.07);
     border: 1.5px solid #ede6f0;
     margin-bottom: 0;
     margin-top: 0;
     position: relative;
+    padding: 36px 36px 24px 36px;
 }
-.main-followup-col {
-    flex: 1;
-    min-width: 320px;
-    max-width: 340px;
-    margin-left: 32px;
-    margin-top: 24px;
-}
-.chat-area-bg {
-    background: #d3d3d3;
+.qa-card {
+    background: #f7f3f6;
     border-radius: 16px;
-    min-height: 420px;
-    max-width: 800px;
-    margin: 0 auto 0 auto;
-    padding: 32px 24px 0 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
+    box-shadow: 0 1.5px 8px rgba(60,0,20,0.06);
+    border: 1.2px solid #e9e3ea;
+    margin-bottom: 28px;
+    padding: 24px 28px 18px 28px;
+    width: 100%;
+    font-family: 'Lato', 'Arial', sans-serif;
+    font-size: 1.13em;
+    color: #2a0710;
+    transition: box-shadow 0.2s;
+}
+.qa-card .qa-question {
+    font-weight: 700;
+    color: #a8325a;
+    font-size: 1.08em;
+    margin-bottom: 8px;
+    font-family: 'Lato', 'Arial', sans-serif;
+}
+.qa-card .qa-answer {
+    margin-top: 6px;
+    color: #2a0710;
+    font-size: 1.01em;
+    font-family: 'Lato', 'Arial', sans-serif;
 }
 .empty-state {
     color: #7a2a3a;
     font-size: 1.18em;
-    text-align: center;
+    text-align: left;
     margin-top: 38px;
     font-family: 'Lato', 'Arial', sans-serif;
     font-weight: 600;
     letter-spacing: 0.2px;
     text-shadow: 0 1px 0 #fff, 0 2px 6px #e9e3ea;
+    padding-left: 12px;
 }
 .input-row {
     display: flex;
@@ -196,22 +207,27 @@ body, .stApp {
     max-width: 700px;
     width: 100%;
     gap: 16px;
-    background: #f7f3f6;
-    border-radius: 12px;
+    background: #fff;
+    border-radius: 14px;
     box-shadow: 0 1.5px 8px rgba(60,0,20,0.06);
-    padding: 12px 18px 12px 18px;
+    padding: 16px 22px 16px 22px;
     border: 1.2px solid #e9e3ea;
 }
-.followup-panel {
+.main-followup-col {
+    flex: 1;
+    min-width: 340px;
+    max-width: 360px;
+    margin-left: 32px;
+    margin-top: 24px;
     background: #f7f3f6;
     border-radius: 18px;
     box-shadow: 0 2px 16px rgba(90,24,50,0.09);
-    padding: 28px 22px 22px 22px;
+    padding: 32px 24px 24px 24px;
     border: 1.5px solid #e9e3ea;
 }
 .followup-title {
     color:#291010; 
-    font-size:1.18em; 
+    font-size:1.22em; 
     font-weight:700; 
     letter-spacing:0.5px; 
     text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea; 
@@ -244,6 +260,23 @@ body, .stApp {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+.followup-btn {
+    width: 100%;
+    margin-bottom: 12px;
+    font-size: 1.04em;
+    font-family: 'Lato', 'Arial', sans-serif;
+    background: #fff;
+    border-radius: 10px;
+    border: 1.2px solid #e9e3ea;
+    color: #a8325a;
+    font-weight: 600;
+    box-shadow: 0 1px 4px rgba(60,0,20,0.04);
+    transition: background 0.15s, color 0.15s;
+}
+.followup-btn:hover {
+    background: #f7e9f3;
+    color: #2a0710;
 }
 </style>''', unsafe_allow_html=True)
 
@@ -281,7 +314,13 @@ if 'chat_history' not in st.session_state:
 if not st.session_state.chat_history:
     chat_content = '<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>'
 else:
-    chat_content = ''  # (Add chat bubbles here if needed)
+    # Render Q&A as magazine-style cards, most recent at bottom
+    chat_content = ''
+    for entry in st.session_state.chat_history:
+        if entry["role"] == "user":
+            chat_content += f'<div class="qa-card"><div class="qa-question">Q: {entry["content"]}</div>'
+        elif entry["role"] == "assistant":
+            chat_content += f'<div class="qa-answer">{entry["content"]}</div></div>'
 if 'last_question' not in st.session_state:
     st.session_state['last_question'] = ""
 if 'question_input_box' not in st.session_state:
@@ -331,7 +370,7 @@ with followup_placeholder.container():
         key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
         for i, q in enumerate(followup_questions):
             btn_key = f"followup_btn_{key_prefix}_{i}"
-            if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
+            if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking, use_container_width=True):
                 if not thinking:
                     st.session_state.update({
                         "last_question": q,
@@ -340,7 +379,6 @@ with followup_placeholder.container():
                     })
                     st.session_state.chat_history.append({"role": "user", "content": q})
                     st.experimental_rerun()
-            st.markdown('<div style="margin-bottom:8px;"></div>', unsafe_allow_html=True)
 
 # --- Render all in one box (original layout restored, but widgets are interactive) ---
 main_box_html = """
