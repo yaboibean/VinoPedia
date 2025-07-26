@@ -308,36 +308,7 @@ else:
 st.markdown(main_box_html.format(chat_content=chat_content, input_row=input_row, followup_content=followup_content), unsafe_allow_html=True)
 
 # --- Handle question submission and response ---
-if ask_button and question:
-    st.session_state.last_question = question
-    st.session_state.chat_history.append({"role": "user", "content": question})
-    st.session_state.question_input_box = ""
-    with st.spinner("Thinking..."):
-        try:
-            query_embedding = embed_query(question)
-            D, I = index.search(np.array([query_embedding]), k=3)
-            relevant_chunks = []
-            for idx in I[0]:
-                if idx < len(chunks):
-                    chunk = chunks[idx]
-                    truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
-                    relevant_chunks.append(truncated_chunk)
-            relevant = "\n\n".join(relevant_chunks)
-            prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=400,
-                temperature=0.3
-            )
-            answer = response.choices[0].message.content
-            st.session_state.chat_history.append({"role": "assistant", "content": answer})
-        except Exception as e:
-            import traceback
-            tb = traceback.format_exc()
-            error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
-            st.session_state.chat_history.append({"role": "assistant", "content": error_message})
-    st.experimental_rerun()
+# (Disabled: input and button are HTML only, not Streamlit widgets)
 
 
 def calculate_recency_bias(chunk):
