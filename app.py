@@ -104,20 +104,8 @@ def embed_query(query):
 
 # --- Custom CSS for exact match ---
 st.markdown('''<style>
-.ask-btn:active {
-    background: linear-gradient(90deg,#3d0d16 0%,#7a1c3a 100%);
-}
-</style>''', unsafe_allow_html=True)
-st.markdown('''<style>
-.main-flex-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: flex-start;
-    width: 100vw;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
+body, .stApp {
+    background: radial-gradient(ellipse at center, #3d0d16 0%, #2a0710 100%) !important;
 }
 .main-box {
     background: #f7f3f3;
@@ -165,6 +153,78 @@ st.markdown('''<style>
     max-width: 340px;
     margin-left: 32px;
     margin-top: 24px;
+}
+.chat-area-bg {
+    background: #d3d3d3;
+    border-radius: 16px;
+    min-height: 420px;
+    max-width: 800px;
+    margin: 0 auto 0 auto;
+    padding: 32px 24px 0 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+.empty-state {
+    color: #1a1a1a;
+    font-size: 1.08em;
+    text-align: center;
+    margin-top: 24px;
+    font-family: 'Lato', 'Arial', sans-serif;
+}
+.input-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 24px auto 0 auto;
+    max-width: 800px;
+    width: 100%;
+    gap: 16px;
+}
+.followup-panel {
+    background: #f7f3f6;
+    border-radius: 18px;
+    box-shadow: 0 2px 16px rgba(90,24,50,0.09);
+    padding: 28px 22px 22px 22px;
+    border: 1.5px solid #e9e3ea;
+}
+.followup-title {
+    color:#291010; 
+    font-size:1.18em; 
+    font-weight:700; 
+    letter-spacing:0.5px; 
+    text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea; 
+    margin-bottom: 18px;
+    font-family: 'Lato', 'Arial', sans-serif;
+}
+.followup-spinner {
+    margin:10px 0 16px 0; 
+    color:#a8325a; 
+    background:#f7f3f6; 
+    border-radius:10px; 
+    padding:7px 14px; 
+    font-size:0.98em; 
+    font-weight:500; 
+    display:flex; 
+    align-items:center; 
+    border:1px solid #e9e3ea; 
+    justify-content:left;
+}
+.followup-spinner .spinner {
+    display:inline-block;
+    width:15px;
+    height:15px;
+    border:2.5px solid #e9ecef;
+    border-top:2.5px solid #a8325a;
+    border-radius:50%;
+    margin-right:8px;
+    animation:spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>''', unsafe_allow_html=True)
 
@@ -257,8 +317,6 @@ if ask_button and question:
             error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
             st.session_state.chat_history.append({"role": "assistant", "content": error_message})
     st.experimental_rerun()
-
-st.markdown('</div>', unsafe_allow_html=True)  # End main container
 
 
 def calculate_recency_bias(chunk):
