@@ -29,154 +29,102 @@ def generate_followup_questions(last_question):
                 questions.append(q)
         # Fallbacks if not enough
         fallback_questions = [
-            "Tell me more about wine terminology",
-            "What are some wine tasting techniques?",
-            "How do wine regions affect flavor?"
-        ]
-        for fallback in fallback_questions:
-            if len(questions) >= 5:
-                break
-            if fallback not in questions:
-                questions.append(fallback)
-        return questions[:5]
-    except Exception as e:
-        return [
-            "Tell me more about wine styles",
-            "What are some wine tasting tips?",
-            "How do I choose the right wine?"
-        ]
-import faiss
-import numpy as np
-import pickle
-import os
-import logging
 
-# Configure logging (for local debug)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# --- Robust session state initialization ---
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'last_question' not in st.session_state:
+    st.session_state.last_question = ""
+if 'question_input_box' not in st.session_state:
+    st.session_state.question_input_box = ""
+if 'thinking' not in st.session_state:
+    st.session_state.thinking = False
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# --- Callback for Ask button ---
+def handle_ask():
+    q = st.session_state.question_input_box
+    if q:
+        st.session_state.last_question = q
+        st.session_state.question_input_box = ""
+        st.session_state.thinking = True
+        st.session_state.chat_history.append({"role": "user", "content": q})
 
+# --- Main UI: single main box, Streamlit layout ---
+st.markdown('<div class="main-box">', unsafe_allow_html=True)
+st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
 
-# --- Load environment and data ---
-from dotenv import load_dotenv
-load_dotenv()
-openai_api_key = os.environ.get("OPENAI_API_KEY")
-if not openai_api_key:
-    st.error("OPENAI_API_KEY not set in environment or .env file")
-    st.stop()
-client = OpenAI(api_key=openai_api_key)
+main_col1, main_col2 = st.columns([2.2, 1], gap="large")
 
-# Load index + chunk text with error handling
-try:
-    if not os.path.exists("magazine_index.faiss"):
-        st.error("❌ magazine_index.faiss not found! Run extract_and_index.py first.")
-        st.stop()
-    if not os.path.exists("magazine_chunks.pkl"):
-        st.error("❌ magazine_chunks.pkl not found! Run extract_and_index.py first.")
-        st.stop()
-    index = faiss.read_index("magazine_index.faiss")
-    with open("magazine_chunks.pkl", "rb") as f:
-        chunks = pickle.load(f)
-    if len(chunks) == 0:
-        st.error("❌ No chunks found in pickle file!")
-        st.stop()
-except Exception as e:
-    st.error(f"❌ Failed to load index/chunks: {str(e)}")
-    index = None
-    chunks = []
+# --- Chat column ---
+with main_col1:
+    st.markdown('<div class="main-chat-col">', unsafe_allow_html=True)
+    # Render Q&A as magazine-style cards
+    if not st.session_state.chat_history:
+        st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
+    else:
+        history = st.session_state.chat_history
+        i = 0
+        while i < len(history):
+            if history[i]["role"] == "user":
+                q = history[i]["content"]
+                a = ""
+                if i+1 < len(history) and history[i+1]["role"] == "assistant":
+                    a = history[i+1]["content"]
+                st.markdown(f'<div class="qa-card"><div class="qa-question">Q: {q}</div>' + (f'<div class="qa-answer">{a}</div>' if a else '') + '</div>', unsafe_allow_html=True)
+                i += 2 if a else 1
+            else:
+                st.markdown(f'<div class="qa-card"><div class="qa-answer">{history[i]["content"]}</div></div>', unsafe_allow_html=True)
+                i += 1
+    # Input row (widgets, only one instance)
+    st.markdown('<div class="input-row">', unsafe_allow_html=True)
+    input_col1, input_col2 = st.columns([8,2], gap="small")
+    with input_col1:
+        st.text_input(
+            "",
+            placeholder="What would you like to know about wine?",
+            key="question_input_box",
+            label_visibility="collapsed"
+        )
+    with input_col2:
+        st.button("Ask", key="ask_button", use_container_width=True, on_click=handle_ask)
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
+# --- Follow-up/Recommended Questions column ---
+with main_col2:
+    st.markdown('<div class="main-followup-col">', unsafe_allow_html=True)
+    st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
+    last_q = st.session_state.get('last_question', '')
+    import hashlib
+    if not last_q:
+        recommended_questions = generate_followup_questions("")
+        key_prefix = "init"
+        def make_recommended_callback(q):
+            def cb():
+                st.session_state.last_question = q
+                st.session_state.question_input_box = ""
+                st.session_state.thinking = True
+                st.session_state.chat_history.append({"role": "user", "content": q})
+            return cb
+        for i, q in enumerate(recommended_questions):
+            btn_key = f"recommended_btn_{key_prefix}_{i}"
+            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_recommended_callback(q))
+    else:
+        followup_questions = generate_followup_questions(last_q)
+        key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8]
+        def make_followup_callback(q):
+            def cb():
+                st.session_state.last_question = q
+                st.session_state.question_input_box = ""
+                st.session_state.thinking = True
+                st.session_state.chat_history.append({"role": "user", "content": q})
+            return cb
+        for i, q in enumerate(followup_questions):
+            btn_key = f"followup_btn_{key_prefix}_{i}"
+            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_followup_callback(q))
+    st.markdown('</div>', unsafe_allow_html=True)
 
-def embed_query(query):
-    response = client.embeddings.create(
-        input=[query],
-        model="text-embedding-3-small"
-    )
-    return np.array(response.data[0].embedding, dtype="float32")
-
-# --- Custom CSS for modern magazine-inspired layout (not a chat UI) ---
-st.markdown('''<style>
-body, .stApp {
-    background: linear-gradient(135deg, #3d0d16 0%, #2a0710 100%) !important;
-}
-.main-box {
-    background: #f7f3f3;
-    border-radius: 28px;
-    width: 1200px;
-    margin: 48px auto 0 auto;
-    box-shadow: 0 6px 40px rgba(60,0,20,0.13), 0 2px 12px rgba(60,0,20,0.09);
-    min-height: 900px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    position: relative;
-    padding: 54px 64px 54px 64px;
-    border: 1.5px solid #e9e3ea;
-}
-.header-title {
-    text-align: left;
-    font-size: 3.1em;
-    font-weight: 900;
-    color: #2a0710;
-    margin-bottom: 32px;
-    margin-top: 0px;
-    letter-spacing: 1.5px;
-    font-family: 'Playfair Display', 'Lato', 'Arial', serif;
-    text-shadow: 0 2px 8px #f7e9f3, 0 1px 0 #fff;
-    border-left: 8px solid #a8325a;
-    padding-left: 24px;
-}
-.main-content-row {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: stretch;
-    width: 100%;
-    flex: 1;
-    min-height: 600px;
-    gap: 40px;
-}
-.main-chat-col {
-    flex: 2.2;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    padding: 0 0 0 0;
-    min-height: 600px;
-    background: #fff;
-    border-radius: 22px;
-    box-shadow: 0 2px 18px rgba(60,0,20,0.07);
-    border: 1.5px solid #ede6f0;
-    margin-bottom: 0;
-    margin-top: 0;
-    position: relative;
-    padding: 36px 36px 24px 36px;
-}
-.qa-card {
-    background: #f7f3f6;
-    border-radius: 16px;
-    box-shadow: 0 1.5px 8px rgba(60,0,20,0.06);
-    border: 1.2px solid #e9e3ea;
-    margin-bottom: 28px;
-    padding: 24px 28px 18px 28px;
-    width: 100%;
-    font-family: 'Lato', 'Arial', sans-serif;
-    font-size: 1.13em;
-    color: #2a0710;
-    transition: box-shadow 0.2s;
-}
-.qa-card .qa-question {
-    font-weight: 700;
-    color: #a8325a;
+st.markdown('</div>', unsafe_allow_html=True)  # Close main-box
     font-size: 1.08em;
     margin-bottom: 8px;
     font-family: 'Lato', 'Arial', sans-serif;
