@@ -253,68 +253,87 @@ body, .stApp {
 
 
 
-# --- Single main box: all content inside a single .main-box div ---
+st.markdown('''
+<div class="main-box" style="display: flex; flex-direction: column; align-items: stretch;">
+  <div class="header-title">Sommelier India's Cellar Sage</div>
+  <div class="main-content-row" style="display: flex; flex-direction: row; align-items: flex-start; justify-content: stretch; width: 100%; flex: 1; min-height: 600px; gap: 32px;">
+    <div class="main-chat-col" style="flex:2; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-height:600px; background:#fff; border-radius:18px; box-shadow:0 2px 18px rgba(60,0,20,0.07); border:1.5px solid #ede6f0; margin-bottom:0; margin-top:0; position:relative; padding:0 0 0 0;">
+      <div class="chat-area-bg" style="background:#e9e3ea; border-radius:16px; min-height:120px; max-width:800px; margin:0 auto 0 auto; padding:32px 24px 0 24px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:100%;">
+''', unsafe_allow_html=True)
 
+# --- Chat area ---
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if not st.session_state.chat_history:
+    st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
+else:
+    for msg in st.session_state.chat_history:
+        if msg['role'] == 'user':
+            st.markdown(f'<div style="text-align:left;margin:10px 0 0 0;"><span style="background:#f7e3ea;color:#2a0710;padding:10px 18px 10px 16px;border-radius:13px 13px 13px 3px;font-size:1.08em;font-family:Lato,Arial,sans-serif;display:inline-block;max-width:90%;">{msg["content"]}</span></div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div style="text-align:left;margin:10px 0 0 0;"><span style="background:#e9e3ea;color:#1a1a1a;padding:10px 18px 10px 16px;border-radius:13px 13px 3px 13px;font-size:1.08em;font-family:Lato,Arial,sans-serif;display:inline-block;max-width:90%;">{msg["content"]}</span></div>', unsafe_allow_html=True)
 
+st.markdown('''</div>
+      <div style="height:18px;"></div>
+      <div class="input-row" style="display:flex; flex-direction:row; align-items:center; justify-content:flex-start; margin:0 auto 0 auto; max-width:700px; width:100%; gap:0; background:#f7f3f6; border-radius:12px; box-shadow:0 1.5px 8px rgba(60,0,20,0.06); padding:0; border:1.2px solid #e9e3ea;">
+        <div style="flex:1;">
+''', unsafe_allow_html=True)
 
-# --- All content inside a single main-box div, with correct layout and interactivity ---
-st.markdown('<div class="main-box">', unsafe_allow_html=True)
-st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
-st.markdown('<div class="main-content-row">', unsafe_allow_html=True)
-
-# --- Chat and followup columns visually inside the main box ---
-chat_col, followup_col = st.columns([2, 1], gap="large")
-
-with chat_col:
-    # Chat area
-    if 'chat_history' not in st.session_state:
-        st.session_state.chat_history = []
-    if not st.session_state.chat_history:
-        st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
-    else:
-        for msg in st.session_state.chat_history:
-            if msg['role'] == 'user':
-                st.markdown(f'<div style="text-align:left;margin:10px 0 0 0;"><span style="background:#f7e3ea;color:#2a0710;padding:10px 18px 10px 16px;border-radius:13px 13px 13px 3px;font-size:1.08em;font-family:Lato,Arial,sans-serif;display:inline-block;max-width:90%;">{msg["content"]}</span></div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div style="text-align:left;margin:10px 0 0 0;"><span style="background:#e9e3ea;color:#1a1a1a;padding:10px 18px 10px 16px;border-radius:13px 13px 3px 13px;font-size:1.08em;font-family:Lato,Arial,sans-serif;display:inline-block;max-width:90%;">{msg["content"]}</span></div>', unsafe_allow_html=True)
-    st.markdown('<div style="height:12px;"></div>', unsafe_allow_html=True)
-    # Input row visually at the bottom of chat column
-    st.markdown('<div class="input-row">', unsafe_allow_html=True)
-    input_col1, input_col2 = st.columns([8,2], gap="small")
-    with input_col1:
-        question = st.text_input(
-            "",
-            placeholder="What would you like to know about wine?",
-            key="question_input_box",
-            label_visibility="collapsed",
-            value=st.session_state.get("question_input_box", "")
-        )
-    with input_col2:
-        ask_button = st.button("Ask", key="ask_button", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with followup_col:
-    st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
-    thinking = st.session_state.get('thinking', False)
-    if thinking:
-        st.markdown('<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>', unsafe_allow_html=True)
-    else:
-        followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
-        import hashlib
-        last_q = st.session_state.get('last_question', '')
-        key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
-        for i, q in enumerate(followup_questions):
-            btn_key = f"followup_btn_{key_prefix}_{i}"
-            if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
-                if not thinking:
-                    st.session_state.last_question = q
-                    st.session_state.chat_history.append({"role": "user", "content": q})
-                    st.session_state.question_input_box = ""
-                    st.session_state.thinking = True
-                    st.experimental_rerun()
-            st.markdown('<div style="margin-bottom:8px;"></div>', unsafe_allow_html=True)
-
+# --- Input bar (styled to match screenshot) ---
+question = st.text_input(
+    "",
+    placeholder="What would you like to know about wine?",
+    key="question_input_box",
+    label_visibility="collapsed",
+    value=st.session_state.get("question_input_box", "")
+)
 st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('''<div style="width:120px; display:flex; align-items:center; justify-content:center; margin-left:8px;">
+''', unsafe_allow_html=True)
+ask_button = st.button(
+    "Ask",
+    key="ask_button",
+    use_container_width=True,
+    help="Submit your wine question"
+)
+st.markdown('</div></div>', unsafe_allow_html=True)
+st.markdown('''</div>
+    </div>
+''', unsafe_allow_html=True)
+
+# --- Follow-up panel (right column) ---
+st.markdown('''    <div class="main-followup-col" style="flex:1; min-width:320px; max-width:340px; margin-left:32px; margin-top:24px;">
+      <div class="followup-panel" style="background: linear-gradient(120deg, #f7f3f6 80%, #fff 100%); border-radius:18px; box-shadow:0 2px 16px rgba(90,24,50,0.09); padding:28px 22px 22px 22px; border:1.5px solid #e9e3ea;">
+        <div class="followup-title" style="color:#291010; font-size:1.18em; font-weight:700; letter-spacing:0.5px; text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea; margin-bottom:18px; font-family:'Lato','Arial',sans-serif;">Popular Questions</div>
+''', unsafe_allow_html=True)
+thinking = st.session_state.get('thinking', False)
+if thinking:
+    st.markdown('<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>', unsafe_allow_html=True)
+else:
+    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+    import hashlib
+    last_q = st.session_state.get('last_question', '')
+    key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
+    for i, q in enumerate(followup_questions):
+        btn_key = f"followup_btn_{key_prefix}_{i}"
+        # Button with custom style to match screenshot
+        st.markdown(f'''<div style="margin-bottom:18px;">
+          <div style="border:1.5px solid #7a2a3a; border-radius:32px; background: #fff; box-shadow:0 1.5px 8px rgba(60,0,20,0.04); padding:0;">
+        ''', unsafe_allow_html=True)
+        if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
+            if not thinking:
+                st.session_state.last_question = q
+                st.session_state.chat_history.append({"role": "user", "content": q})
+                st.session_state.question_input_box = ""
+                st.session_state.thinking = True
+                st.experimental_rerun()
+        st.markdown('</div></div>', unsafe_allow_html=True)
+
+st.markdown('''      </div>
+    </div>
+  </div>
+</div>
+''', unsafe_allow_html=True)
 
 # --- Handle question submission and response ---
 if ask_button and question:
