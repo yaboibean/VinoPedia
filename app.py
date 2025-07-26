@@ -198,11 +198,11 @@ st.markdown('''<style>
 .main-box {
     background: #f7f3f3;
     border-radius: 20px;
-    max-width: 1200px;
-    width: 1100px;
-    margin: 48px 0 48px 0;
+    width: 1300px;
+    min-width: 1100px;
+    margin: 32px 0 32px 0;
     box-shadow: 0 2px 32px rgba(60,0,20,0.10);
-    min-height: 800px;
+    min-height: 900px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -246,16 +246,20 @@ st.markdown('''<style>
 </style>''', unsafe_allow_html=True)
 
 
-st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
 
-# --- Centered chat area ---
+# --- Unified main container with everything inside ---
+st.markdown('<div class="main-flex-container">', unsafe_allow_html=True)
+st.markdown('<div class="main-box">', unsafe_allow_html=True)
+st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-content-row">', unsafe_allow_html=True)
+st.markdown('<div class="main-chat-col">', unsafe_allow_html=True)
 st.markdown('<div class="chat-area-bg">', unsafe_allow_html=True)
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if not st.session_state.chat_history:
     st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
 # (If you want to render chat bubbles, add here)
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)  # end chat-area-bg
 
 # --- Input row at the bottom of chat area ---
 if 'question_input_box' not in st.session_state:
@@ -273,6 +277,29 @@ with col_input:
 with col_btn:
     ask_button = st.button("Ask", key="ask_button")
 st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)  # end main-chat-col
+
+# --- Follow-up panel in main box, right column ---
+st.markdown('<div class="main-followup-col">', unsafe_allow_html=True)
+st.markdown('<div class="followup-panel" style="position:static;box-shadow:none;margin-top:0;">', unsafe_allow_html=True)
+st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
+thinking = st.session_state.get('thinking', False)
+if thinking:
+    st.markdown('''<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>''', unsafe_allow_html=True)
+else:
+    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+    for i, q in enumerate(followup_questions):
+        if st.button(q, key=f"followup_btn_{i}", help="Click to ask this question", disabled=thinking):
+            if not thinking:
+                st.session_state.last_question = q
+                st.session_state.chat_history.append({"role": "user", "content": q})
+                st.session_state.thinking = True
+                st.experimental_rerun()
+st.markdown('</div>', unsafe_allow_html=True)  # end followup-panel
+st.markdown('</div>', unsafe_allow_html=True)  # end main-followup-col
+st.markdown('</div>', unsafe_allow_html=True)  # end main-content-row
+st.markdown('</div>', unsafe_allow_html=True)  # end main-box
+st.markdown('</div>', unsafe_allow_html=True)  # end main-flex-container
 
 # --- Handle question submission and response ---
 if ask_button and question:
