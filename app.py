@@ -431,20 +431,22 @@ if st.session_state.get("thinking", False) and st.session_state.get("last_questi
     with st.spinner("Thinking..."):
         try:
             query_embedding = embed_query(question)
-            D, I = index.search(np.array([query_embedding]), k=3)
+            # Only fetch the single most relevant chunk for speed
+            D, I = index.search(np.array([query_embedding]), k=1)
             relevant_chunks = []
             for idx in I[0]:
                 if idx < len(chunks):
                     chunk = chunks[idx]
-                    truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
+                    truncated_chunk = chunk[:400] + "..." if len(chunk) > 400 else chunk
                     relevant_chunks.append(truncated_chunk)
             relevant = "\n\n".join(relevant_chunks)
-            prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
+            # Short, direct prompt for speed
+            prompt = f"Answer the wine question using this magazine context:\n{relevant}\n\nQ: {question}\n- Be concise, expert, and cite sources."
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=400,
-                temperature=0.3
+                max_tokens=200,
+                temperature=0.1
             )
             answer = response.choices[0].message.content
             st.session_state.chat_history.append({"role": "assistant", "content": answer})
