@@ -374,24 +374,19 @@ def calculate_recency_bias(chunk):
     try:
         # Extract year from chunk text (look for patterns like "2023", "2024", "2025")
         import re
-        
         # Look for 4-digit years in the chunk
         years = re.findall(r'\b(20[1-2][0-9])\b', chunk)
-        
         # Also look for "Issue" numbers and patterns
         issue_patterns = [
             r'Issue\s+(\d+),?\s+20([1-2][0-9])',  # "Issue 1, 2023"
             r'SI Issue\s+(\d+),?\s+20([1-2][0-9])',  # "SI Issue 2, 2024"
             r'20([1-2][0-9])',  # Just year
         ]
-        
         latest_year = 2018  # Default fallback year
         issue_number = 1     # Default issue number
-        
         # Find the most recent year mentioned
         if years:
             latest_year = max(int(year) for year in years)
-        
         # Look for issue numbers
         for pattern in issue_patterns:
             matches = re.findall(pattern, chunk)
@@ -402,11 +397,9 @@ def calculate_recency_bias(chunk):
                     if year > latest_year:
                         latest_year = year
                 break
-        
         # Calculate recency score (0-1, higher for more recent)
         current_year = 2025
         year_diff = current_year - latest_year
-        
         # Recent content gets higher scores
         if year_diff <= 1:  # 2024-2025
             year_score = 1.0
@@ -418,17 +411,14 @@ def calculate_recency_bias(chunk):
             year_score = 0.4
         else:  # Older than 2020
             year_score = 0.2
-        
         # Boost for higher issue numbers (later in year)
         issue_boost = min(issue_number * 0.1, 0.3)
-        
         final_score = year_score + issue_boost
-        
         logger.debug(f"Recency bias for year {latest_year}, issue {issue_number}: {final_score}")
         return final_score
-        
     except Exception as e:
-st.markdown('''<style>
+        logger.debug(f"Error calculating recency bias: {str(e)}")
+        return 0.3  # Default moderate score
 body, .stApp {
     background: radial-gradient(ellipse at center, #3d0d16 0%, #2a0710 100%) !important;
 }
