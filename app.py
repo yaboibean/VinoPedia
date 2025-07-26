@@ -417,6 +417,8 @@ def calculate_recency_bias(chunk):
         logger.debug(f"Recency bias for year {latest_year}, issue {issue_number}: {final_score}")
         return final_score
     except Exception as e:
+        logger.debug(f"Error calculating recency bias: {str(e)}")
+        return 0.3  # Default moderate score
 
 
 
