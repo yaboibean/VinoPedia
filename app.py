@@ -370,16 +370,30 @@ with input_placeholder.container():
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Followup content (Streamlit buttons rendered in HTML layout) ---
-thinking = st.session_state.get('thinking', False)
 followup_placeholder = st.empty()
 with followup_placeholder.container():
-    if thinking:
-        st.markdown('<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>', unsafe_allow_html=True)
-    else:
-        followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+    # Show recommended questions if no question has been asked yet, otherwise show follow-ups
+    last_q = st.session_state.get('last_question', '')
+    if not last_q:
+        # Show recommended questions (first call to generate_followup_questions with empty string)
+        recommended_questions = generate_followup_questions("")
         import hashlib
-        last_q = st.session_state.get('last_question', '')
-        key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
+        key_prefix = "init"
+        def make_recommended_callback(q):
+            def cb():
+                st.session_state.last_question = q
+                st.session_state.question_input_box = ""
+                st.session_state.thinking = True
+                st.session_state.chat_history.append({"role": "user", "content": q})
+            return cb
+        for i, q in enumerate(recommended_questions):
+            btn_key = f"recommended_btn_{key_prefix}_{i}"
+            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_recommended_callback(q))
+    else:
+        # Show follow-up questions for the last question
+        followup_questions = generate_followup_questions(last_q)
+        import hashlib
+        key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8]
         def make_followup_callback(q):
             def cb():
                 st.session_state.last_question = q
@@ -389,7 +403,7 @@ with followup_placeholder.container():
             return cb
         for i, q in enumerate(followup_questions):
             btn_key = f"followup_btn_{key_prefix}_{i}"
-            st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking, use_container_width=True, on_click=make_followup_callback(q))
+            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_followup_callback(q))
 
 # --- Render all in one box (original layout restored, but widgets are interactive) ---
 main_box_html = """
