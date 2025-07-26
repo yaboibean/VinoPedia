@@ -314,13 +314,25 @@ if 'chat_history' not in st.session_state:
 if not st.session_state.chat_history:
     chat_content = '<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>'
 else:
-    # Render Q&A as magazine-style cards, most recent at bottom
+    # Render Q&A as magazine-style cards, pairing each user question with the next assistant answer
     chat_content = ''
-    for entry in st.session_state.chat_history:
-        if entry["role"] == "user":
-            chat_content += f'<div class="qa-card"><div class="qa-question">Q: {entry["content"]}</div>'
-        elif entry["role"] == "assistant":
-            chat_content += f'<div class="qa-answer">{entry["content"]}</div></div>'
+    history = st.session_state.chat_history
+    i = 0
+    while i < len(history):
+        if history[i]["role"] == "user":
+            q = history[i]["content"]
+            a = ""
+            if i+1 < len(history) and history[i+1]["role"] == "assistant":
+                a = history[i+1]["content"]
+            chat_content += f'<div class="qa-card"><div class="qa-question">Q: {q}</div>'
+            if a:
+                chat_content += f'<div class="qa-answer">{a}</div>'
+            chat_content += '</div>'
+            i += 2 if a else 1
+        else:
+            # If for some reason an assistant message appears first or unpaired, show it alone
+            chat_content += f'<div class="qa-card"><div class="qa-answer">{history[i]["content"]}</div></div>'
+            i += 1
 if 'last_question' not in st.session_state:
     st.session_state['last_question'] = ""
 if 'question_input_box' not in st.session_state:
