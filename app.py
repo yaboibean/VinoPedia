@@ -185,8 +185,7 @@ body, .stApp {
 }
 </style>''', unsafe_allow_html=True)
 
-# --- Main container ---
-st.markdown('<div class="main-container-bg">', unsafe_allow_html=True)
+
 st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
 
 # --- Centered chat area ---
