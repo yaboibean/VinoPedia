@@ -144,8 +144,9 @@ body, .stApp {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
     padding: 0 0 0 0;
+    min-height: 600px;
 }
 .main-followup-col {
     flex: 1;
@@ -242,8 +243,10 @@ main_box_html = """
   <div class="header-title">Sommelier India's Cellar Sage</div>
   <div class="main-content-row">
     <div class="main-chat-col">
-      {chat_content}
-      {input_row}
+      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">
+        {chat_content}
+      </div>
+      <div style="width:100%;">{input_row}</div>
     </div>
     <div class="main-followup-col">
       <div class="followup-title">Follow-up & Common Questions</div>
