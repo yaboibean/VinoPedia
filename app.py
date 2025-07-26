@@ -184,6 +184,66 @@ body, .stApp {
     background: linear-gradient(90deg,#3d0d16 0%,#7a1c3a 100%);
 }
 </style>''', unsafe_allow_html=True)
+st.markdown('''<style>
+.main-flex-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100vw;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+.main-box {
+    background: #f7f3f3;
+    border-radius: 20px;
+    max-width: 1200px;
+    width: 1100px;
+    margin: 48px 0 48px 0;
+    box-shadow: 0 2px 32px rgba(60,0,20,0.10);
+    min-height: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: relative;
+    padding: 40px 48px 40px 48px;
+}
+.header-title {
+    text-align: center;
+    font-size: 2.8em;
+    font-weight: 800;
+    color: #2a0710;
+    margin-bottom: 18px;
+    margin-top: 0px;
+    letter-spacing: 1px;
+    font-family: 'Lato', 'Arial', sans-serif;
+}
+.main-content-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: stretch;
+    width: 100%;
+    flex: 1;
+    min-height: 600px;
+}
+.main-chat-col {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 0 0 0;
+}
+.main-followup-col {
+    flex: 1;
+    min-width: 320px;
+    max-width: 340px;
+    margin-left: 32px;
+    margin-top: 24px;
+}
+</style>''', unsafe_allow_html=True)
 
 
 st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
