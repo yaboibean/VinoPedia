@@ -39,121 +39,86 @@ def generate_followup_questions(last_question):
             if fallback not in questions:
                 questions.append(fallback)
         return questions[:5]
-    except Exception as e:
-        return [
-            "Tell me more about wine styles",
-            "What are some wine tasting tips?",
-            "How do I choose the right wine?"
-        ]
-import faiss
-import numpy as np
-import pickle
-import os
-import logging
 
-# Configure logging (for local debug)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+# --- Modern Main Card Layout ---
+st.markdown('''
+<div class="wine-main-card">
+  <div class="wine-title">Sommelier India's Cellar Sage</div>
+  <div class="wine-desc">Tap into decades of wine wisdom from the Sommelier India Archives</div>
+  <div class="wine-content-row">
+    <div class="wine-chat-col">
+      <div class="wine-chat-area">
+''', unsafe_allow_html=True)
+
+# --- Chat area ---
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if not st.session_state.chat_history:
+    st.markdown('<div class="wine-empty">No conversation yet. Ask your first wine question!</div>', unsafe_allow_html=True)
+else:
+    for i, msg in enumerate(st.session_state.chat_history):
+        is_user = msg['role'] == 'user'
+        bubble_class = 'wine-bubble-user' if is_user else 'wine-bubble-assistant'
+        avatar = '🍷' if is_user else '🤖'
+        st.markdown(f'''
+        <div class="wine-chat-row">
+          <span class="wine-avatar">{avatar}</span>
+          <span class="{bubble_class}">{msg["content"]}</span>
+        </div>
+        ''', unsafe_allow_html=True)
+
+st.markdown('''</div>
+      <div class="wine-input-bar">
+        <div class="wine-input-inner">
+''', unsafe_allow_html=True)
+
+# --- Input bar ---
+question = st.text_input(
+    "",
+    placeholder="What would you like to know about wine?",
+    key="question_input_box",
+    label_visibility="collapsed",
+    value=st.session_state.get("question_input_box", "")
 )
-logger = logging.getLogger(__name__)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+ask_button = st.button(
+    "Ask",
+    key="ask_button",
+    use_container_width=True,
+    help="Submit your wine question"
 )
-logger = logging.getLogger(__name__)
+st.markdown('''</div></div></div>
+''', unsafe_allow_html=True)
 
+# --- Follow-up panel (right column) ---
+st.markdown('''    <div class="wine-followup-col">
+      <div class="wine-followup-panel">
+        <div class="wine-followup-title">Popular Questions</div>
+''', unsafe_allow_html=True)
+thinking = st.session_state.get('thinking', False)
+if thinking:
+    st.markdown('<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>', unsafe_allow_html=True)
+else:
+    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+    import hashlib
+    last_q = st.session_state.get('last_question', '')
+    key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
+    for i, q in enumerate(followup_questions):
+        btn_key = f"followup_btn_{key_prefix}_{i}"
+        st.markdown(f'''<div class="wine-followup-btn-row">''', unsafe_allow_html=True)
+        if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
+            if not thinking:
+                st.session_state.last_question = q
+                st.session_state.chat_history.append({"role": "user", "content": q})
+                st.session_state.question_input_box = ""
+                st.session_state.thinking = True
+                st.experimental_rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Load environment and data ---
-from dotenv import load_dotenv
-load_dotenv()
-openai_api_key = os.environ.get("OPENAI_API_KEY")
-if not openai_api_key:
-    st.error("OPENAI_API_KEY not set in environment or .env file")
-    st.stop()
-client = OpenAI(api_key=openai_api_key)
-
-# Load index + chunk text with error handling
-try:
-    if not os.path.exists("magazine_index.faiss"):
-        st.error("❌ magazine_index.faiss not found! Run extract_and_index.py first.")
-        st.stop()
-    if not os.path.exists("magazine_chunks.pkl"):
-        st.error("❌ magazine_chunks.pkl not found! Run extract_and_index.py first.")
-        st.stop()
-    index = faiss.read_index("magazine_index.faiss")
-    with open("magazine_chunks.pkl", "rb") as f:
-        chunks = pickle.load(f)
-    if len(chunks) == 0:
-        st.error("❌ No chunks found in pickle file!")
-        st.stop()
-except Exception as e:
-    st.error(f"❌ Failed to load index/chunks: {str(e)}")
-    index = None
-    chunks = []
-
-
-def embed_query(query):
-    response = client.embeddings.create(
-        input=[query],
-        model="text-embedding-3-small"
-    )
-    return np.array(response.data[0].embedding, dtype="float32")
-
-
-# --- Modern, Clean CSS ---
-st.markdown('''<style>
-body, .stApp {
-    background: radial-gradient(ellipse at center, #3d0d16 0%, #2a0710 100%) !important;
-}
-.wine-main-card {
-    background: #f7f3f3;
-    border-radius: 28px;
-    width: 900px;
-    margin: 48px auto 0 auto;
-    box-shadow: 0 6px 36px rgba(60,0,20,0.13), 0 2px 12px rgba(60,0,20,0.09);
-    min-height: 700px;
-    display: flex;
     flex-direction: column;
-    align-items: stretch;
-    position: relative;
-    padding: 36px 36px 24px 36px;
-    border: 1.5px solid #e9e3ea;
-}
-.wine-title {
-    text-align: center;
-    font-size: 2.5em;
-    font-weight: 900;
-    color: #2a0710;
-    margin-bottom: 10px;
-    margin-top: 0px;
-    letter-spacing: 1.1px;
-    font-family: 'Lato', 'Arial', sans-serif;
-    text-shadow: 0 2px 8px #f7e9f3, 0 1px 0 #fff;
-}
-.wine-desc {
-    text-align: center;
-    color: #7a2a3a;
-    font-size: 1.15em;
-    font-family: 'Lato', 'Arial', sans-serif;
-    font-weight: 600;
-    margin-bottom: 24px;
-    text-shadow: 0 1px 0 #fff, 0 2px 6px #e9e3ea;
-}
-.wine-content-row {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: stretch;
-    width: 100%;
-    gap: 32px;
-}
-.wine-chat-col {
-    flex: 2;
-    display: flex;
-    flex-direction: column;
+    </div>
+  </div>
+</div>
+''', unsafe_allow_html=True)
     align-items: stretch;
     min-height: 400px;
     background: #fff;
