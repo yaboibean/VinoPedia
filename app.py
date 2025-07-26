@@ -104,6 +104,19 @@ def embed_query(query):
 
 
 # --- Custom CSS for exact match ---
+st.markdown('''<style>
+body, .stApp {
+    background: radial-gradient(ellipse at center, #3d0d16 0%, #2a0710 100%) !important;
+}
+.main-container-bg {
+    background: #f7f3f3;
+    border-radius: 20px;
+    max-width: 1100px;
+    margin: 32px auto 32px auto;
+    padding: 32px 0 32px 0;
+    box-shadow: 0 2px 32px rgba(60,0,20,0.10);
+    min-height: 90vh;
+}
 .header-title {
     text-align: center;
     font-size: 2.8em;
@@ -172,17 +185,17 @@ def embed_query(query):
 }
 </style>''', unsafe_allow_html=True)
 
-
-# --- Header and chat area together, centered ---
-st.markdown('<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:32px;">', unsafe_allow_html=True)
+# --- Main container ---
+st.markdown('<div class="main-container-bg">', unsafe_allow_html=True)
 st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
+
+# --- Centered chat area ---
 st.markdown('<div class="chat-area-bg">', unsafe_allow_html=True)
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if not st.session_state.chat_history:
     st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
 # (If you want to render chat bubbles, add here)
-st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Input row at the bottom of chat area ---
