@@ -253,28 +253,8 @@ body, .stApp {
 
 
 
-# --- Single main box: all content inside a single .main-box div ---
 
-# --- All content inside a single main-box div ---
-main_box_html = """
-<div class="main-box">
-  <div class="header-title">Sommelier India's Cellar Sage</div>
-  <div class="main-content-row">
-    <div class="main-chat-col">
-      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">
-        {chat_content}
-      </div>
-      <div style="width:100%;">{input_row}</div>
-    </div>
-    <div class="main-followup-col">
-      <div class="followup-title">Follow-up & Common Questions</div>
-      {followup_content}
-    </div>
-  </div>
-</div>
-"""
-
-
+# --- Session state initialization ---
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'last_question' not in st.session_state:
@@ -284,13 +264,26 @@ if 'question_input_box' not in st.session_state:
 if 'thinking' not in st.session_state:
     st.session_state.thinking = False
 
-# --- Chat content ---
-if not st.session_state.chat_history:
-    chat_content = '<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>'
-else:
-    chat_content = ''  # (Add chat bubbles here if needed)
-input_placeholder = st.empty()
-with input_placeholder.container():
+# --- Main box layout ---
+with st.container():
+    st.markdown('<div class="main-box">', unsafe_allow_html=True)
+    st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-content-row">', unsafe_allow_html=True)
+    # --- Main chat column ---
+    st.markdown('<div class="main-chat-col">', unsafe_allow_html=True)
+    st.markdown('<div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">', unsafe_allow_html=True)
+    # --- Chat content ---
+    if not st.session_state.chat_history:
+        st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
+    else:
+        for msg in st.session_state.chat_history:
+            if msg["role"] == "user":
+                st.markdown(f'<div style="text-align:left;margin:12px 0 0 0;"><b>🧑‍💼 You:</b> {msg["content"]}</div>', unsafe_allow_html=True)
+            elif msg["role"] == "assistant":
+                st.markdown(f'<div style="text-align:left;margin:12px 0 0 0;background:#f7f3f6;padding:12px 16px;border-radius:12px;box-shadow:0 1.5px 8px #e9e3ea;">{msg["content"]}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    # --- Input row ---
+    st.markdown('<div style="width:100%;">', unsafe_allow_html=True)
     st.markdown('<div class="input-row">', unsafe_allow_html=True)
     input_col1, input_col2 = st.columns([8,2], gap="small")
     with input_col1:
@@ -304,11 +297,13 @@ with input_placeholder.container():
     with input_col2:
         ask_button = st.button("Ask", key="ask_button", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)  # end input row
+    st.markdown('</div>', unsafe_allow_html=True)  # end main-chat-col
 
-# --- Followup content (Streamlit buttons rendered in HTML layout) ---
-thinking = st.session_state.get('thinking', False)
-followup_placeholder = st.empty()
-with followup_placeholder.container():
+    # --- Followup column ---
+    st.markdown('<div class="main-followup-col">', unsafe_allow_html=True)
+    st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
+    thinking = st.session_state.get('thinking', False)
     if thinking:
         st.markdown('<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>', unsafe_allow_html=True)
     else:
@@ -324,33 +319,16 @@ with followup_placeholder.container():
                     st.session_state.chat_history.append({"role": "user", "content": q})
                     st.session_state.thinking = True
             st.markdown('<div style="margin-bottom:8px;"></div>', unsafe_allow_html=True)
-
-# --- Render all in one box (original layout restored, but widgets are interactive) ---
-main_box_html = """
-<div class="main-box">
-  <div class="header-title">Sommelier India's Cellar Sage</div>
-  <div class="main-content-row">
-    <div class="main-chat-col">
-      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">
-        {chat_content}
-      </div>
-      <div style="width:100%;">{{input_row}}</div>
-    </div>
-    <div class="main-followup-col">
-      <div class="followup-title">Follow-up & Common Questions</div>
-      {{followup_content}}
-    </div>
-  </div>
-</div>
-"""
-st.markdown(main_box_html.format(chat_content=chat_content).replace("{input_row}", "").replace("{followup_content}", ""), unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)  # end main-followup-col
+    st.markdown('</div>', unsafe_allow_html=True)  # end main-content-row
+    st.markdown('</div>', unsafe_allow_html=True)  # end main-box
 
 # --- Handle question submission and response ---
 if ask_button and question:
     st.session_state.last_question = question
     st.session_state.chat_history.append({"role": "user", "content": question})
     st.session_state.thinking = True
-    st.experimental_rerun()
+    st.session_state.question_input_box = ""  # Clear input after ask
 
 # --- Generate answer if thinking ---
 if st.session_state.get("thinking", False) and st.session_state.get("last_question", ""):
@@ -381,31 +359,24 @@ if st.session_state.get("thinking", False) and st.session_state.get("last_questi
             error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
             st.session_state.chat_history.append({"role": "assistant", "content": error_message})
     st.session_state.thinking = False
-
-
 def calculate_recency_bias(chunk):
     """Calculate recency bias score - higher score for more recent content"""
     try:
         # Extract year from chunk text (look for patterns like "2023", "2024", "2025")
         import re
-        
         # Look for 4-digit years in the chunk
         years = re.findall(r'\b(20[1-2][0-9])\b', chunk)
-        
         # Also look for "Issue" numbers and patterns
         issue_patterns = [
             r'Issue\s+(\d+),?\s+20([1-2][0-9])',  # "Issue 1, 2023"
             r'SI Issue\s+(\d+),?\s+20([1-2][0-9])',  # "SI Issue 2, 2024"
             r'20([1-2][0-9])',  # Just year
         ]
-        
         latest_year = 2018  # Default fallback year
         issue_number = 1     # Default issue number
-        
         # Find the most recent year mentioned
         if years:
             latest_year = max(int(year) for year in years)
-        
         # Look for issue numbers
         for pattern in issue_patterns:
             matches = re.findall(pattern, chunk)
@@ -416,11 +387,9 @@ def calculate_recency_bias(chunk):
                     if year > latest_year:
                         latest_year = year
                 break
-        
         # Calculate recency score (0-1, higher for more recent)
         current_year = 2025
         year_diff = current_year - latest_year
-        
         # Recent content gets higher scores
         if year_diff <= 1:  # 2024-2025
             year_score = 1.0
@@ -432,21 +401,13 @@ def calculate_recency_bias(chunk):
             year_score = 0.4
         else:  # Older than 2020
             year_score = 0.2
-        
         # Boost for higher issue numbers (later in year)
         issue_boost = min(issue_number * 0.1, 0.3)
-        
         final_score = year_score + issue_boost
-        
         logger.debug(f"Recency bias for year {latest_year}, issue {issue_number}: {final_score}")
         return final_score
-        
     except Exception as e:
         logger.debug(f"Error calculating recency bias: {str(e)}")
         return 0.3  # Default moderate score
-
-
-
-## Remove duplicate generate_followup_questions and random import at the bottom
 
 
