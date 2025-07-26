@@ -323,7 +323,6 @@ with followup_placeholder.container():
                     st.session_state.last_question = q
                     st.session_state.chat_history.append({"role": "user", "content": q})
                     st.session_state.thinking = True
-                    st.experimental_rerun()
             st.markdown('<div style="margin-bottom:8px;"></div>', unsafe_allow_html=True)
 
 # --- Render all in one box (original layout restored, but widgets are interactive) ---
