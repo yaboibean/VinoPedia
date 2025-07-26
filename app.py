@@ -382,7 +382,6 @@ if st.session_state.get("thinking", False) and st.session_state.get("last_questi
             error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
             st.session_state.chat_history.append({"role": "assistant", "content": error_message})
     st.session_state.thinking = False
-    st.experimental_rerun()
 
 
 def calculate_recency_bias(chunk):
