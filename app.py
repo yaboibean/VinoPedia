@@ -231,17 +231,16 @@ body, .stApp {
 
 
 # --- Single main box with all content inside ---
+
 st.markdown('<div class="main-box">', unsafe_allow_html=True)
 st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
 st.markdown('<div class="main-content-row">', unsafe_allow_html=True)
 st.markdown('<div class="main-chat-col">', unsafe_allow_html=True)
-st.markdown('<div class="chat-area-bg">', unsafe_allow_html=True)
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if not st.session_state.chat_history:
     st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
 # (If you want to render chat bubbles, add here)
-st.markdown('</div>', unsafe_allow_html=True)  # end chat-area-bg
 
 # --- Input row at the bottom of chat area ---
 if 'question_input_box' not in st.session_state:
@@ -261,9 +260,7 @@ with col_btn:
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)  # end main-chat-col
 
-# --- Follow-up panel in main box, right column ---
 st.markdown('<div class="main-followup-col">', unsafe_allow_html=True)
-st.markdown('<div class="followup-panel" style="position:static;box-shadow:none;margin-top:0;">', unsafe_allow_html=True)
 st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
 thinking = st.session_state.get('thinking', False)
 if thinking:
@@ -281,7 +278,6 @@ else:
                 st.session_state.chat_history.append({"role": "user", "content": q})
                 st.session_state.thinking = True
                 st.experimental_rerun()
-st.markdown('</div>', unsafe_allow_html=True)  # end followup-panel
 st.markdown('</div>', unsafe_allow_html=True)  # end main-followup-col
 st.markdown('</div>', unsafe_allow_html=True)  # end main-content-row
 st.markdown('</div>', unsafe_allow_html=True)  # end main-box
