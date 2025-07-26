@@ -368,17 +368,16 @@ with followup_placeholder.container():
         import hashlib
         last_q = st.session_state.get('last_question', '')
         key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
+        def make_followup_callback(q):
+            def cb():
+                st.session_state.last_question = q
+                st.session_state.question_input_box = ""
+                st.session_state.thinking = True
+                st.session_state.chat_history.append({"role": "user", "content": q})
+            return cb
         for i, q in enumerate(followup_questions):
             btn_key = f"followup_btn_{key_prefix}_{i}"
-            if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking, use_container_width=True):
-                if not thinking:
-                    st.session_state.update({
-                        "last_question": q,
-                        "question_input_box": "",
-                        "thinking": True
-                    })
-                    st.session_state.chat_history.append({"role": "user", "content": q})
-                    st.experimental_rerun()
+            st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking, use_container_width=True, on_click=make_followup_callback(q))
 
 # --- Render all in one box (original layout restored, but widgets are interactive) ---
 main_box_html = """
