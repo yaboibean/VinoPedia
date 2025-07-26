@@ -64,24 +64,7 @@ else:
         <div class="wine-chat-row">
           <span class="wine-avatar">{avatar}</span>
           <span class="{bubble_class}">{msg["content"]}</span>
-        </div>
-        ''', unsafe_allow_html=True)
 
-st.markdown('''</div>
-      <div class="wine-input-bar">
-        <div class="wine-input-inner">
-''', unsafe_allow_html=True)
-
-# --- Input bar ---
-question = st.text_input(
-    "",
-    placeholder="What would you like to know about wine?",
-    key="question_input_box",
-    label_visibility="collapsed",
-    value=st.session_state.get("question_input_box", "")
-)
-ask_button = st.button(
-    "Ask",
     key="ask_button",
     use_container_width=True,
     help="Submit your wine question"
@@ -123,120 +106,9 @@ else:
 
 
 
-# --- Modern Main Box Layout ---
-st.markdown('''
-<div class="main-box modern-main-box">
-  <div class="header-title modern-title">Sommelier India's Cellar Sage</div>
-  <div class="modern-content-row">
-    <div class="modern-chat-col">
-      <div class="modern-chat-area">
-    "",
-    placeholder="What would you like to know about wine?",
-    key="question_input_box",
-    label_visibility="collapsed",
-        <div class="modern-followup-title">Popular Questions</div>
-''', unsafe_allow_html=True)
-if ask_button and question:
-
-# --- Modern Main Card Layout ---
-st.markdown('''
-<div class="wine-main-card">
-  <div class="wine-title">Sommelier India's Cellar Sage</div>
-  <div class="wine-desc">Tap into decades of wine wisdom from the Sommelier India Archives</div>
-  <div class="wine-content-row">
-    <div class="wine-chat-col">
-      <div class="wine-chat-area">
-''', unsafe_allow_html=True)
-
-# --- Chat area ---
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-if not st.session_state.chat_history:
-    st.markdown('<div class="wine-empty">No conversation yet. Ask your first wine question!</div>', unsafe_allow_html=True)
-else:
-    for i, msg in enumerate(st.session_state.chat_history):
-        is_user = msg['role'] == 'user'
-        bubble_class = 'wine-bubble-user' if is_user else 'wine-bubble-assistant'
-        avatar = '🍷' if is_user else '🤖'
-        st.markdown(f'''
-        <div class="wine-chat-row">
-          <span class="wine-avatar">{avatar}</span>
-          <span class="{bubble_class}">{msg["content"]}</span>
-        </div>
-        ''', unsafe_allow_html=True)
-
-st.markdown('''</div>
-        try:
-            query_embedding = embed_query(question)
-            D, I = index.search(np.array([query_embedding]), k=3)
-
-# --- Input bar ---
-question = st.text_input(
-    "",
-    placeholder="What would you like to know about wine?",
-    key="question_input_box",
-    label_visibility="collapsed",
-    value=st.session_state.get("question_input_box", "")
-)
-ask_button = st.button(
-    "Ask",
-    key="ask_button",
-    use_container_width=True,
-    help="Submit your wine question"
-)
 st.markdown('''</div></div></div>
-            relevant_chunks = []
 
-# --- Follow-up panel (right column) ---
-st.markdown('''    <div class="wine-followup-col">
-      <div class="wine-followup-panel">
-        <div class="wine-followup-title">Popular Questions</div>
-''', unsafe_allow_html=True)
-thinking = st.session_state.get('thinking', False)
-if thinking:
-    st.markdown('<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>', unsafe_allow_html=True)
-else:
-    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
-    import hashlib
-    last_q = st.session_state.get('last_question', '')
-    key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
-    for i, q in enumerate(followup_questions):
-        btn_key = f"followup_btn_{key_prefix}_{i}"
-        st.markdown(f'''<div class="wine-followup-btn-row">''', unsafe_allow_html=True)
-        if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
-            if not thinking:
-                st.session_state.last_question = q
-                st.session_state.chat_history.append({"role": "user", "content": q})
-                st.session_state.question_input_box = ""
-                st.session_state.thinking = True
-                st.experimental_rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
-            for idx in I[0]:
-    </div>
-  </div>
-</div>
-''', unsafe_allow_html=True)
-                if idx < len(chunks):
-                    chunk = chunks[idx]
-                    truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
-                    relevant_chunks.append(truncated_chunk)
-            relevant = "\n\n".join(relevant_chunks)
-            prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=400,
-                temperature=0.3
-            )
-            answer = response.choices[0].message.content
-            st.session_state.chat_history.append({"role": "assistant", "content": answer})
-        except Exception as e:
-            import traceback
-            tb = traceback.format_exc()
-            error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
-            st.session_state.chat_history.append({"role": "assistant", "content": error_message})
-    st.experimental_rerun()
 
 
 def calculate_recency_bias(chunk):
