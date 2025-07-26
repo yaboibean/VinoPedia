@@ -230,8 +230,7 @@ body, .stApp {
 
 
 
-st.markdown('<div class="main-box">', unsafe_allow_html=True)
-st.markdown('<div class="main-followup-col">', unsafe_allow_html=True)
+
 
 # --- Single main box with all content inside using st.container() ---
 with st.container():
