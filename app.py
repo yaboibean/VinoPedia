@@ -371,81 +371,70 @@ with input_placeholder.container():
 
 
 
-# --- Render all in one box (original layout restored, but widgets are interactive) ---
-main_box_html = """
-<div class="main-box">
-  <div class="header-title">Sommelier India's Cellar Sage</div>
-  <div class="main-content-row">
-    <div class="main-chat-col">
-      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">
-        {chat_content}
-      </div>
-      <div style="width:100%;">{{input_row}}</div>
-    </div>
-    <div class="main-followup-col">
-      <div class="followup-title">Follow-up & Common Questions</div>
-      {{followup_content}}
-    </div>
-  </div>
-</div>
-"""
 
-# Render the main box except the follow-up panel
-st.markdown(main_box_html.format(chat_content=chat_content).replace("{input_row}", "").replace("{followup_content}", ""), unsafe_allow_html=True)
+# --- Render all content in a single main box using Streamlit columns for layout ---
+st.markdown('<div class="main-box">', unsafe_allow_html=True)
 
-# Render follow-up/recommended questions directly in the follow-up panel
-with st.container():
-    followup_panel = st.container()
-    with followup_panel:
-        last_q = st.session_state.get('last_question', '')
-        if not last_q:
-            recommended_questions = generate_followup_questions("")
-            import hashlib
-            key_prefix = "init"
-            def make_recommended_callback(q):
-                def cb():
-                    st.session_state.last_question = q
-                    st.session_state.question_input_box = ""
-                    st.session_state.thinking = True
-                    st.session_state.chat_history.append({"role": "user", "content": q})
-                return cb
-            for i, q in enumerate(recommended_questions):
-                btn_key = f"recommended_btn_{key_prefix}_{i}"
-                st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_recommended_callback(q))
-        else:
-            followup_questions = generate_followup_questions(last_q)
-            import hashlib
-            key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8]
-            def make_followup_callback(q):
-                def cb():
-                    st.session_state.last_question = q
-                    st.session_state.question_input_box = ""
-                    st.session_state.thinking = True
-                    st.session_state.chat_history.append({"role": "user", "content": q})
-                return cb
-            for i, q in enumerate(followup_questions):
-                btn_key = f"followup_btn_{key_prefix}_{i}"
-                st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_followup_callback(q))
+# Header
+st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
 
-# --- Render all in one box (original layout restored, but widgets are interactive) ---
-main_box_html = """
-<div class="main-box">
-  <div class="header-title">Sommelier India's Cellar Sage</div>
-  <div class="main-content-row">
-    <div class="main-chat-col">
-      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">
-        {chat_content}
-      </div>
-      <div style="width:100%;">{{input_row}}</div>
-    </div>
-    <div class="main-followup-col">
-      <div class="followup-title">Follow-up & Common Questions</div>
-      {{followup_content}}
-    </div>
-  </div>
-</div>
-"""
-st.markdown(main_box_html.format(chat_content=chat_content).replace("{input_row}", "").replace("{followup_content}", ""), unsafe_allow_html=True)
+# Main content row: use Streamlit columns for chat and follow-up
+main_col1, main_col2 = st.columns([2.2, 1], gap="large")
+
+with main_col1:
+    st.markdown('<div class="main-chat-col">', unsafe_allow_html=True)
+    st.markdown(f'<div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">{chat_content}</div>', unsafe_allow_html=True)
+    # Input row (widgets)
+    st.markdown('<div style="width:100%;">', unsafe_allow_html=True)
+    input_col1, input_col2 = st.columns([8,2], gap="small")
+    with input_col1:
+        question = st.text_input(
+            "",
+            placeholder="What would you like to know about wine?",
+            key="question_input_box",
+            label_visibility="collapsed",
+            value=st.session_state.question_input_box
+        )
+    with input_col2:
+        ask_button = st.button("Ask", key="ask_button", use_container_width=True, on_click=handle_ask)
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with main_col2:
+    st.markdown('<div class="main-followup-col">', unsafe_allow_html=True)
+    st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
+    last_q = st.session_state.get('last_question', '')
+    if not last_q:
+        recommended_questions = generate_followup_questions("")
+        import hashlib
+        key_prefix = "init"
+        def make_recommended_callback(q):
+            def cb():
+                st.session_state.last_question = q
+                st.session_state.question_input_box = ""
+                st.session_state.thinking = True
+                st.session_state.chat_history.append({"role": "user", "content": q})
+            return cb
+        for i, q in enumerate(recommended_questions):
+            btn_key = f"recommended_btn_{key_prefix}_{i}"
+            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_recommended_callback(q))
+    else:
+        followup_questions = generate_followup_questions(last_q)
+        import hashlib
+        key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8]
+        def make_followup_callback(q):
+            def cb():
+                st.session_state.last_question = q
+                st.session_state.question_input_box = ""
+                st.session_state.thinking = True
+                st.session_state.chat_history.append({"role": "user", "content": q})
+            return cb
+        for i, q in enumerate(followup_questions):
+            btn_key = f"followup_btn_{key_prefix}_{i}"
+            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_followup_callback(q))
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)  # Close main-box
 
 # --- Handle question submission and response ---
 if st.session_state.get("thinking", False) and st.session_state.get("last_question", ""):
