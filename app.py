@@ -29,122 +29,163 @@ def generate_followup_questions(last_question):
                 questions.append(q)
         # Fallbacks if not enough
         fallback_questions = [
+            "Tell me more about wine terminology",
+            "What are some wine tasting techniques?",
+            "How do wine regions affect flavor?"
+        ]
+        for fallback in fallback_questions:
+            if len(questions) >= 5:
+                break
+            if fallback not in questions:
+                questions.append(fallback)
+        return questions[:5]
+    except Exception as e:
+        return [
+            "Tell me more about wine styles",
+            "What are some wine tasting tips?",
+            "How do I choose the right wine?"
+        ]
+import faiss
+import numpy as np
+import pickle
+import os
+import logging
 
-# --- Robust session state initialization ---
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-if 'last_question' not in st.session_state:
-    st.session_state.last_question = ""
-if 'question_input_box' not in st.session_state:
-    st.session_state.question_input_box = ""
-if 'thinking' not in st.session_state:
-    st.session_state.thinking = False
+# Configure logging (for local debug)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# --- Callback for Ask button ---
-def handle_ask():
-    q = st.session_state.question_input_box
-    if q:
-        st.session_state.last_question = q
-        st.session_state.question_input_box = ""
-        st.session_state.thinking = True
-        st.session_state.chat_history.append({"role": "user", "content": q})
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# --- Main UI: single main box, Streamlit layout ---
-st.markdown('<div class="main-box">', unsafe_allow_html=True)
-st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
 
-main_col1, main_col2 = st.columns([2.2, 1], gap="large")
+# --- Load environment and data ---
+from dotenv import load_dotenv
+load_dotenv()
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+if not openai_api_key:
+    st.error("OPENAI_API_KEY not set in environment or .env file")
+    st.stop()
+client = OpenAI(api_key=openai_api_key)
 
-# --- Chat column ---
-with main_col1:
-    st.markdown('<div class="main-chat-col">', unsafe_allow_html=True)
-    # Render Q&A as magazine-style cards
-    if not st.session_state.chat_history:
-        st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
-    else:
-        history = st.session_state.chat_history
-        i = 0
-        while i < len(history):
-            if history[i]["role"] == "user":
-                q = history[i]["content"]
-                a = ""
-                if i+1 < len(history) and history[i+1]["role"] == "assistant":
-                    a = history[i+1]["content"]
-                st.markdown(f'<div class="qa-card"><div class="qa-question">Q: {q}</div>' + (f'<div class="qa-answer">{a}</div>' if a else '') + '</div>', unsafe_allow_html=True)
-                i += 2 if a else 1
-            else:
-                st.markdown(f'<div class="qa-card"><div class="qa-answer">{history[i]["content"]}</div></div>', unsafe_allow_html=True)
-                i += 1
-    # Input row (widgets, only one instance)
-    st.markdown('<div class="input-row">', unsafe_allow_html=True)
-    input_col1, input_col2 = st.columns([8,2], gap="small")
-    with input_col1:
-        st.text_input(
-            "",
-            placeholder="What would you like to know about wine?",
-            key="question_input_box",
-            label_visibility="collapsed"
-        )
-    with input_col2:
-        st.button("Ask", key="ask_button", use_container_width=True, on_click=handle_ask)
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+# Load index + chunk text with error handling
+try:
+    if not os.path.exists("magazine_index.faiss"):
+        st.error("❌ magazine_index.faiss not found! Run extract_and_index.py first.")
+        st.stop()
+    if not os.path.exists("magazine_chunks.pkl"):
+        st.error("❌ magazine_chunks.pkl not found! Run extract_and_index.py first.")
+        st.stop()
+    index = faiss.read_index("magazine_index.faiss")
+    with open("magazine_chunks.pkl", "rb") as f:
+        chunks = pickle.load(f)
+    if len(chunks) == 0:
+        st.error("❌ No chunks found in pickle file!")
+        st.stop()
+except Exception as e:
+    st.error(f"❌ Failed to load index/chunks: {str(e)}")
+    index = None
+    chunks = []
 
-# --- Follow-up/Recommended Questions column ---
-with main_col2:
-    st.markdown('<div class="main-followup-col">', unsafe_allow_html=True)
-    st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
-    last_q = st.session_state.get('last_question', '')
-    import hashlib
-    if not last_q:
-        recommended_questions = generate_followup_questions("")
-        key_prefix = "init"
-        def make_recommended_callback(q):
-            def cb():
-                st.session_state.last_question = q
-                st.session_state.question_input_box = ""
-                st.session_state.thinking = True
-                st.session_state.chat_history.append({"role": "user", "content": q})
-            return cb
-        for i, q in enumerate(recommended_questions):
-            btn_key = f"recommended_btn_{key_prefix}_{i}"
-            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_recommended_callback(q))
-    else:
-        followup_questions = generate_followup_questions(last_q)
-        key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8]
-        def make_followup_callback(q):
-            def cb():
-                st.session_state.last_question = q
-                st.session_state.question_input_box = ""
-                st.session_state.thinking = True
-                st.session_state.chat_history.append({"role": "user", "content": q})
-            return cb
-        for i, q in enumerate(followup_questions):
-            btn_key = f"followup_btn_{key_prefix}_{i}"
-            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_followup_callback(q))
-    st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)  # Close main-box
-    font-size: 1.08em;
-    margin-bottom: 8px;
-    font-family: 'Lato', 'Arial', sans-serif;
+def embed_query(query):
+    response = client.embeddings.create(
+        input=[query],
+        model="text-embedding-3-small"
+    )
+    return np.array(response.data[0].embedding, dtype="float32")
+
+# --- Custom CSS for exact match ---
+st.markdown('''<style>
+body, .stApp {
+    background: radial-gradient(ellipse at center, #3d0d16 0%, #2a0710 100%) !important;
 }
-.qa-card .qa-answer {
-    margin-top: 6px;
+.main-box {
+    background: #f7f3f3;
+    border-radius: 22px;
+    width: 1100px;
+    margin: 48px auto 0 auto;
+    box-shadow: 0 4px 36px rgba(60,0,20,0.13), 0 1.5px 8px rgba(60,0,20,0.07);
+    min-height: 900px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: relative;
+    padding: 44px 54px 44px 54px;
+    border: 1.5px solid #e9e3ea;
+}
+.header-title {
+    text-align: center;
+    font-size: 2.9em;
+    font-weight: 900;
     color: #2a0710;
-    font-size: 1.01em;
+    margin-bottom: 22px;
+    margin-top: 0px;
+    letter-spacing: 1.2px;
     font-family: 'Lato', 'Arial', sans-serif;
+    text-shadow: 0 2px 8px #f7e9f3, 0 1px 0 #fff;
+}
+.main-content-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: stretch;
+    width: 100%;
+    flex: 1;
+    min-height: 600px;
+    gap: 32px;
+}
+.main-chat-col {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 0 0;
+    min-height: 600px;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 2px 18px rgba(60,0,20,0.07);
+    border: 1.5px solid #ede6f0;
+    margin-bottom: 0;
+    margin-top: 0;
+    position: relative;
+}
+.main-followup-col {
+    flex: 1;
+    min-width: 320px;
+    max-width: 340px;
+    margin-left: 32px;
+    margin-top: 24px;
+}
+.chat-area-bg {
+    background: #d3d3d3;
+    border-radius: 16px;
+    min-height: 420px;
+    max-width: 800px;
+    margin: 0 auto 0 auto;
+    padding: 32px 24px 0 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 .empty-state {
     color: #7a2a3a;
     font-size: 1.18em;
-    text-align: left;
+    text-align: center;
     margin-top: 38px;
     font-family: 'Lato', 'Arial', sans-serif;
     font-weight: 600;
     letter-spacing: 0.2px;
     text-shadow: 0 1px 0 #fff, 0 2px 6px #e9e3ea;
-    padding-left: 12px;
 }
 .input-row {
     display: flex;
@@ -155,27 +196,22 @@ st.markdown('</div>', unsafe_allow_html=True)  # Close main-box
     max-width: 700px;
     width: 100%;
     gap: 16px;
-    background: #fff;
-    border-radius: 14px;
+    background: #f7f3f6;
+    border-radius: 12px;
     box-shadow: 0 1.5px 8px rgba(60,0,20,0.06);
-    padding: 16px 22px 16px 22px;
+    padding: 12px 18px 12px 18px;
     border: 1.2px solid #e9e3ea;
 }
-.main-followup-col {
-    flex: 1;
-    min-width: 340px;
-    max-width: 360px;
-    margin-left: 32px;
-    margin-top: 24px;
+.followup-panel {
     background: #f7f3f6;
     border-radius: 18px;
     box-shadow: 0 2px 16px rgba(90,24,50,0.09);
-    padding: 32px 24px 24px 24px;
+    padding: 28px 22px 22px 22px;
     border: 1.5px solid #e9e3ea;
 }
 .followup-title {
     color:#291010; 
-    font-size:1.22em; 
+    font-size:1.18em; 
     font-weight:700; 
     letter-spacing:0.5px; 
     text-shadow:0 1px 0 #fff, 0 2px 6px #e9e3ea; 
@@ -208,23 +244,6 @@ st.markdown('</div>', unsafe_allow_html=True)  # Close main-box
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-.followup-btn {
-    width: 100%;
-    margin-bottom: 12px;
-    font-size: 1.04em;
-    font-family: 'Lato', 'Arial', sans-serif;
-    background: #fff;
-    border-radius: 10px;
-    border: 1.2px solid #e9e3ea;
-    color: #a8325a;
-    font-weight: 600;
-    box-shadow: 0 1px 4px rgba(60,0,20,0.04);
-    transition: background 0.15s, color 0.15s;
-}
-.followup-btn:hover {
-    background: #f7e9f3;
-    color: #2a0710;
 }
 </style>''', unsafe_allow_html=True)
 
@@ -262,45 +281,11 @@ if 'chat_history' not in st.session_state:
 if not st.session_state.chat_history:
     chat_content = '<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>'
 else:
-    # Render Q&A as magazine-style cards, pairing each user question with the next assistant answer
-    chat_content = ''
-    history = st.session_state.chat_history
-    i = 0
-    while i < len(history):
-        if history[i]["role"] == "user":
-            q = history[i]["content"]
-            a = ""
-            if i+1 < len(history) and history[i+1]["role"] == "assistant":
-                a = history[i+1]["content"]
-            chat_content += f'<div class="qa-card"><div class="qa-question">Q: {q}</div>'
-            if a:
-                chat_content += f'<div class="qa-answer">{a}</div>'
-            chat_content += '</div>'
-            i += 2 if a else 1
-        else:
-            # If for some reason an assistant message appears first or unpaired, show it alone
-            chat_content += f'<div class="qa-card"><div class="qa-answer">{history[i]["content"]}</div></div>'
-            i += 1
-if 'last_question' not in st.session_state:
-    st.session_state['last_question'] = ""
-if 'question_input_box' not in st.session_state:
-    st.session_state['question_input_box'] = ""
-if 'thinking' not in st.session_state:
-    st.session_state['thinking'] = False
+    chat_content = ''  # (Add chat bubbles here if needed)
 
 # --- Input row (Streamlit widgets rendered in HTML layout) ---
 if 'question_input_box' not in st.session_state:
     st.session_state.question_input_box = ""
-
-# Callback for Ask button
-def handle_ask():
-    q = st.session_state.question_input_box
-    if q:
-        st.session_state.last_question = q
-        st.session_state.question_input_box = ""
-        st.session_state.thinking = True
-        st.session_state.chat_history.append({"role": "user", "content": q})
-
 input_placeholder = st.empty()
 with input_placeholder.container():
     st.markdown('<div class="input-row">', unsafe_allow_html=True)
@@ -314,98 +299,73 @@ with input_placeholder.container():
             value=st.session_state.question_input_box
         )
     with input_col2:
-        ask_button = st.button("Ask", key="ask_button", use_container_width=True, on_click=handle_ask)
+        ask_button = st.button("Ask", key="ask_button", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-
-
-
-# --- Render all content in a single main box using Streamlit columns for layout ---
-st.markdown('<div class="main-box">', unsafe_allow_html=True)
-
-# Header
-st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
-
-# Main content row: use Streamlit columns for chat and follow-up
-main_col1, main_col2 = st.columns([2.2, 1], gap="large")
-
-with main_col1:
-    st.markdown('<div class="main-chat-col">', unsafe_allow_html=True)
-    st.markdown(f'<div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">{chat_content}</div>', unsafe_allow_html=True)
-    # Input row (widgets)
-    st.markdown('<div style="width:100%;">', unsafe_allow_html=True)
-    input_col1, input_col2 = st.columns([8,2], gap="small")
-    with input_col1:
-        question = st.text_input(
-            "",
-            placeholder="What would you like to know about wine?",
-            key="question_input_box",
-            label_visibility="collapsed",
-            value=st.session_state.question_input_box
-        )
-    with input_col2:
-        ask_button = st.button("Ask", key="ask_button", use_container_width=True, on_click=handle_ask)
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with main_col2:
-    st.markdown('<div class="main-followup-col">', unsafe_allow_html=True)
-    st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
-    last_q = st.session_state.get('last_question', '')
-    if not last_q:
-        recommended_questions = generate_followup_questions("")
-        import hashlib
-        key_prefix = "init"
-        def make_recommended_callback(q):
-            def cb():
-                st.session_state.last_question = q
-                st.session_state.question_input_box = ""
-                st.session_state.thinking = True
-                st.session_state.chat_history.append({"role": "user", "content": q})
-            return cb
-        for i, q in enumerate(recommended_questions):
-            btn_key = f"recommended_btn_{key_prefix}_{i}"
-            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_recommended_callback(q))
+# --- Followup content (Streamlit buttons rendered in HTML layout) ---
+thinking = st.session_state.get('thinking', False)
+followup_placeholder = st.empty()
+with followup_placeholder.container():
+    if thinking:
+        st.markdown('<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>', unsafe_allow_html=True)
     else:
-        followup_questions = generate_followup_questions(last_q)
+        followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
         import hashlib
-        key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8]
-        def make_followup_callback(q):
-            def cb():
-                st.session_state.last_question = q
-                st.session_state.question_input_box = ""
-                st.session_state.thinking = True
-                st.session_state.chat_history.append({"role": "user", "content": q})
-            return cb
+        last_q = st.session_state.get('last_question', '')
+        key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
         for i, q in enumerate(followup_questions):
             btn_key = f"followup_btn_{key_prefix}_{i}"
-            st.button(q, key=btn_key, help="Click to ask this question", use_container_width=True, on_click=make_followup_callback(q))
-    st.markdown('</div>', unsafe_allow_html=True)
+            if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
+                if not thinking:
+                    st.session_state.last_question = q
+                    st.session_state.chat_history.append({"role": "user", "content": q})
+                    st.session_state.question_input_box = ""
+                    st.session_state.thinking = True
+                    st.experimental_rerun()
+            st.markdown('<div style="margin-bottom:8px;"></div>', unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)  # Close main-box
+# --- Render all in one box (original layout restored, but widgets are interactive) ---
+main_box_html = """
+<div class="main-box">
+  <div class="header-title">Sommelier India's Cellar Sage</div>
+  <div class="main-content-row">
+    <div class="main-chat-col">
+      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">
+        {chat_content}
+      </div>
+      <div style="width:100%;">{{input_row}}</div>
+    </div>
+    <div class="main-followup-col">
+      <div class="followup-title">Follow-up & Common Questions</div>
+      {{followup_content}}
+    </div>
+  </div>
+</div>
+"""
+st.markdown(main_box_html.format(chat_content=chat_content).replace("{input_row}", "").replace("{followup_content}", ""), unsafe_allow_html=True)
 
 # --- Handle question submission and response ---
-if st.session_state.get("thinking", False) and st.session_state.get("last_question", ""):
-    question = st.session_state.last_question
+if ask_button and question:
+    st.session_state.last_question = question
+    st.session_state.chat_history.append({"role": "user", "content": question})
+    st.session_state.question_input_box = ""
     with st.spinner("Thinking..."):
         try:
             query_embedding = embed_query(question)
-            # Only fetch the single most relevant chunk for speed
-            D, I = index.search(np.array([query_embedding]), k=1)
+            D, I = index.search(np.array([query_embedding]), k=3)
             relevant_chunks = []
             for idx in I[0]:
                 if idx < len(chunks):
                     chunk = chunks[idx]
-                    truncated_chunk = chunk[:400] + "..." if len(chunk) > 400 else chunk
+                    truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
                     relevant_chunks.append(truncated_chunk)
             relevant = "\n\n".join(relevant_chunks)
-            # Short, direct prompt for speed
-            prompt = f"Answer the wine question using this magazine context:\n{relevant}\n\nQ: {question}\n- Be concise, expert, and cite sources."
+            prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=200,
-                temperature=0.1
+                max_tokens=400,
+                temperature=0.3
             )
             answer = response.choices[0].message.content
             st.session_state.chat_history.append({"role": "assistant", "content": answer})
@@ -414,7 +374,7 @@ if st.session_state.get("thinking", False) and st.session_state.get("last_questi
             tb = traceback.format_exc()
             error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
             st.session_state.chat_history.append({"role": "assistant", "content": error_message})
-    st.session_state.thinking = False
+    st.experimental_rerun()
 
 
 def calculate_recency_bias(chunk):
