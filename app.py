@@ -317,10 +317,12 @@ with followup_placeholder.container():
             btn_key = f"followup_btn_{key_prefix}_{i}"
             if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
                 if not thinking:
-                    st.session_state.last_question = q
+                    st.session_state.update({
+                        "last_question": q,
+                        "question_input_box": "",
+                        "thinking": True
+                    })
                     st.session_state.chat_history.append({"role": "user", "content": q})
-                    st.session_state.question_input_box = ""
-                    st.session_state.thinking = True
                     st.experimental_rerun()
             st.markdown('<div style="margin-bottom:8px;"></div>', unsafe_allow_html=True)
 
@@ -346,9 +348,12 @@ st.markdown(main_box_html.format(chat_content=chat_content).replace("{input_row}
 
 # --- Handle question submission and response ---
 if ask_button and question:
-    st.session_state.last_question = question
+    st.session_state.update({
+        "last_question": question,
+        "question_input_box": "",
+        "thinking": True
+    })
     st.session_state.chat_history.append({"role": "user", "content": question})
-    st.session_state.question_input_box = ""
     with st.spinner("Thinking..."):
         try:
             query_embedding = embed_query(question)
@@ -374,6 +379,7 @@ if ask_button and question:
             tb = traceback.format_exc()
             error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
             st.session_state.chat_history.append({"role": "assistant", "content": error_message})
+    st.session_state.thinking = False
     st.experimental_rerun()
 
 
