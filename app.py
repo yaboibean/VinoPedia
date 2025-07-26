@@ -255,60 +255,97 @@ body, .stApp {
 
 # --- Single main box: all content inside a single .main-box div ---
 
-# --- All content inside a single main-box div ---
-main_box_html = """
-<div class="main-box">
-  <div class="header-title">Sommelier India's Cellar Sage</div>
-  <div class="main-content-row">
-    <div class="main-chat-col">
-      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;">
-        {chat_content}
-      </div>
-      <div style="width:100%;">{input_row}</div>
-    </div>
-    <div class="main-followup-col">
-      <div class="followup-title">Follow-up & Common Questions</div>
-      {followup_content}
-    </div>
-  </div>
-</div>
-"""
 
-# --- Chat content ---
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-if not st.session_state.chat_history:
-    chat_content = '<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>'
-else:
-    chat_content = ''  # (Add chat bubbles here if needed)
+# --- All content inside a single main-box div, but use Streamlit widgets for interactivity ---
+st.markdown('<div class="main-box">', unsafe_allow_html=True)
+st.markdown('<div class="header-title">Sommelier India\'s Cellar Sage</div>', unsafe_allow_html=True)
 
-# --- Input row ---
-if 'question_input_box' not in st.session_state:
-    st.session_state.question_input_box = ""
-input_row = '''<div class="input-row">
-  <input type="text" id="wine-question" name="wine-question" placeholder="What would you like to know about wine?" style="flex:8;max-width:90%;padding:10px 16px;border-radius:9px;border:1.5px solid #bdb0c6;font-size:1.13em;background:#fff;box-shadow:0 1px 4px #e9e3ea;outline:none;" value="{value}">
-  <button id="ask-btn" style="flex:2;margin-left:12px;padding:10px 28px;border-radius:9px;background:linear-gradient(90deg,#2a0710 60%,#7a2a3a 100%);color:#fff;font-weight:700;font-size:1.13em;border:none;box-shadow:0 1.5px 8px #e9e3ea;transition:background 0.2s,box-shadow 0.2s;cursor:pointer;">Ask</button>
-</div>'''.format(value=st.session_state.question_input_box)
+# Main content row: chat and followup columns
+chat_col, followup_col = st.columns([2, 1], gap="large")
 
-# --- Followup content ---
-thinking = st.session_state.get('thinking', False)
-if thinking:
-    followup_content = '<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>'
-else:
-    followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
-    import hashlib
-    last_q = st.session_state.get('last_question', '')
-    key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
-    followup_content = ''
-    for i, q in enumerate(followup_questions):
-        btn_key = f"followup_btn_{key_prefix}_{i}"
-        followup_content += f'<button style="width:100%;margin-bottom:14px;padding:15px 10px;border-radius:11px;background:linear-gradient(90deg,#1a1a2a 70%,#7a2a3a 100%);color:#fff;font-size:1.04em;font-family:Lato,Arial,sans-serif;font-weight:600;border:none;box-shadow:0 1.5px 8px #e9e3ea;transition:background 0.2s,box-shadow 0.2s;cursor:pointer;">{q}</button>'
+with chat_col:
+    # Chat area (empty state or chat bubbles)
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    if not st.session_state.chat_history:
+        st.markdown('<div class="empty-state">Tap into decades of wine wisdom from the Sommelier India Archives</div>', unsafe_allow_html=True)
+    else:
+        # Render chat bubbles (optional, can be improved)
+        for msg in st.session_state.chat_history:
+            if msg['role'] == 'user':
+                st.markdown(f'<div style="text-align:left;margin:10px 0 0 0;"><span style="background:#f7e3ea;color:#2a0710;padding:10px 18px 10px 16px;border-radius:13px 13px 13px 3px;font-size:1.08em;font-family:Lato,Arial,sans-serif;display:inline-block;max-width:90%;">{msg["content"]}</span></div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div style="text-align:left;margin:10px 0 0 0;"><span style="background:#e9e3ea;color:#1a1a1a;padding:10px 18px 10px 16px;border-radius:13px 13px 3px 13px;font-size:1.08em;font-family:Lato,Arial,sans-serif;display:inline-block;max-width:90%;">{msg["content"]}</span></div>', unsafe_allow_html=True)
 
-# --- Render all in one box ---
-st.markdown(main_box_html.format(chat_content=chat_content, input_row=input_row, followup_content=followup_content), unsafe_allow_html=True)
+    # Input row at the bottom
+    st.markdown('<div style="height:12px;"></div>', unsafe_allow_html=True)
+    with st.container():
+        input_cols = st.columns([8,2])
+        with input_cols[0]:
+            question = st.text_input(
+                "",
+                placeholder="What would you like to know about wine?",
+                key="question_input_box",
+                label_visibility="collapsed",
+                value=st.session_state.get("question_input_box", "")
+            )
+        with input_cols[1]:
+            ask_button = st.button("Ask", key="ask_button", use_container_width=True)
+
+with followup_col:
+    st.markdown('<div class="followup-title">Follow-up & Common Questions</div>', unsafe_allow_html=True)
+    thinking = st.session_state.get('thinking', False)
+    if thinking:
+        st.markdown('<div class="followup-spinner"><span class="spinner"></span><span>Generating follow-up questions...</span></div>', unsafe_allow_html=True)
+    else:
+        followup_questions = generate_followup_questions(st.session_state.get('last_question', ''))
+        import hashlib
+        last_q = st.session_state.get('last_question', '')
+        key_prefix = hashlib.md5(last_q.encode('utf-8')).hexdigest()[:8] if last_q else "init"
+        for i, q in enumerate(followup_questions):
+            btn_key = f"followup_btn_{key_prefix}_{i}"
+            if st.button(q, key=btn_key, help="Click to ask this question", disabled=thinking):
+                if not thinking:
+                    st.session_state.last_question = q
+                    st.session_state.chat_history.append({"role": "user", "content": q})
+                    st.session_state.question_input_box = ""
+                    st.session_state.thinking = True
+                    st.experimental_rerun()
+
+st.markdown('</div>', unsafe_allow_html=True)
+
 
 # --- Handle question submission and response ---
-# (Disabled: input and button are HTML only, not Streamlit widgets)
+if ask_button and question:
+    st.session_state.last_question = question
+    st.session_state.chat_history.append({"role": "user", "content": question})
+    st.session_state.question_input_box = ""
+    with st.spinner("Thinking..."):
+        try:
+            query_embedding = embed_query(question)
+            D, I = index.search(np.array([query_embedding]), k=3)
+            relevant_chunks = []
+            for idx in I[0]:
+                if idx < len(chunks):
+                    chunk = chunks[idx]
+                    truncated_chunk = chunk[:800] + "..." if len(chunk) > 800 else chunk
+                    relevant_chunks.append(truncated_chunk)
+            relevant = "\n\n".join(relevant_chunks)
+            prompt = f"""You are a helpful wine expert assistant answering questions based on wine magazine content.\n\nHere is relevant context from the wine magazines:\n{relevant}\n\nQuestion: {question}\n\nInstructions:\n- Keep responses concise but informative (2-4 paragraphs max)\n- Use bullet points for key information\n- Include specific wine terminology and expert insights\n- Quote directly from magazines when relevant (use quotation marks)\n- If magazines don't contain specific info, state this briefly\n- End with source citations: \"Sommelier India, <issue number>, <year>\"\n\nBe direct and focused - provide depth without being wordy."""
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=400,
+                temperature=0.3
+            )
+            answer = response.choices[0].message.content
+            st.session_state.chat_history.append({"role": "assistant", "content": answer})
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            error_message = f"Error generating answer: {str(e)}\n\nTraceback:\n{tb}\n\nOPENAI_API_KEY present: {'Yes' if openai_api_key else 'No'}"
+            st.session_state.chat_history.append({"role": "assistant", "content": error_message})
+    st.experimental_rerun()
 
 
 def calculate_recency_bias(chunk):
