@@ -109,26 +109,28 @@ body, .stApp {
 }
 .main-box {
     background: #f7f3f3;
-    border-radius: 20px;
+    border-radius: 22px;
     width: 1100px;
     margin: 48px auto 0 auto;
-    box-shadow: 0 2px 32px rgba(60,0,20,0.10);
+    box-shadow: 0 4px 36px rgba(60,0,20,0.13), 0 1.5px 8px rgba(60,0,20,0.07);
     min-height: 900px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     position: relative;
-    padding: 40px 48px 40px 48px;
+    padding: 44px 54px 44px 54px;
+    border: 1.5px solid #e9e3ea;
 }
 .header-title {
     text-align: center;
-    font-size: 2.8em;
-    font-weight: 800;
+    font-size: 2.9em;
+    font-weight: 900;
     color: #2a0710;
-    margin-bottom: 18px;
+    margin-bottom: 22px;
     margin-top: 0px;
-    letter-spacing: 1px;
+    letter-spacing: 1.2px;
     font-family: 'Lato', 'Arial', sans-serif;
+    text-shadow: 0 2px 8px #f7e9f3, 0 1px 0 #fff;
 }
 .main-content-row {
     display: flex;
@@ -138,6 +140,7 @@ body, .stApp {
     width: 100%;
     flex: 1;
     min-height: 600px;
+    gap: 32px;
 }
 .main-chat-col {
     flex: 2;
@@ -147,6 +150,13 @@ body, .stApp {
     justify-content: space-between;
     padding: 0 0 0 0;
     min-height: 600px;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 2px 18px rgba(60,0,20,0.07);
+    border: 1.5px solid #ede6f0;
+    margin-bottom: 0;
+    margin-top: 0;
+    position: relative;
 }
 .main-followup-col {
     flex: 1;
@@ -168,21 +178,29 @@ body, .stApp {
     justify-content: flex-start;
 }
 .empty-state {
-    color: #1a1a1a;
-    font-size: 1.08em;
+    color: #7a2a3a;
+    font-size: 1.18em;
     text-align: center;
-    margin-top: 24px;
+    margin-top: 38px;
     font-family: 'Lato', 'Arial', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    text-shadow: 0 1px 0 #fff, 0 2px 6px #e9e3ea;
 }
 .input-row {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    margin: 24px auto 0 auto;
-    max-width: 800px;
+    margin: 32px auto 0 auto;
+    max-width: 700px;
     width: 100%;
     gap: 16px;
+    background: #f7f3f6;
+    border-radius: 12px;
+    box-shadow: 0 1.5px 8px rgba(60,0,20,0.06);
+    padding: 12px 18px 12px 18px;
+    border: 1.2px solid #e9e3ea;
 }
 .followup-panel {
     background: #f7f3f6;
@@ -268,8 +286,8 @@ else:
 if 'question_input_box' not in st.session_state:
     st.session_state.question_input_box = ""
 input_row = '''<div class="input-row">
-  <input type="text" id="wine-question" name="wine-question" placeholder="What would you like to know about wine?" style="flex:8;max-width:90%;padding:8px 12px;border-radius:8px;border:1.5px solid #ccc;font-size:1.1em;" value="{value}">
-  <button id="ask-btn" style="flex:2;margin-left:8px;padding:8px 18px;border-radius:8px;background:#2a0710;color:#fff;font-weight:600;font-size:1.1em;border:none;">Ask</button>
+  <input type="text" id="wine-question" name="wine-question" placeholder="What would you like to know about wine?" style="flex:8;max-width:90%;padding:10px 16px;border-radius:9px;border:1.5px solid #bdb0c6;font-size:1.13em;background:#fff;box-shadow:0 1px 4px #e9e3ea;outline:none;" value="{value}">
+  <button id="ask-btn" style="flex:2;margin-left:12px;padding:10px 28px;border-radius:9px;background:linear-gradient(90deg,#2a0710 60%,#7a2a3a 100%);color:#fff;font-weight:700;font-size:1.13em;border:none;box-shadow:0 1.5px 8px #e9e3ea;transition:background 0.2s,box-shadow 0.2s;cursor:pointer;">Ask</button>
 </div>'''.format(value=st.session_state.question_input_box)
 
 # --- Followup content ---
@@ -284,7 +302,7 @@ else:
     followup_content = ''
     for i, q in enumerate(followup_questions):
         btn_key = f"followup_btn_{key_prefix}_{i}"
-        followup_content += f'<button style="width:100%;margin-bottom:12px;padding:14px 10px;border-radius:10px;background:#1a1a2a;color:#fff;font-size:1em;font-family:Lato,Arial,sans-serif;font-weight:500;border:none;">{q}</button>'
+        followup_content += f'<button style="width:100%;margin-bottom:14px;padding:15px 10px;border-radius:11px;background:linear-gradient(90deg,#1a1a2a 70%,#7a2a3a 100%);color:#fff;font-size:1.04em;font-family:Lato,Arial,sans-serif;font-weight:600;border:none;box-shadow:0 1.5px 8px #e9e3ea;transition:background 0.2s,box-shadow 0.2s;cursor:pointer;">{q}</button>'
 
 # --- Render all in one box ---
 st.markdown(main_box_html.format(chat_content=chat_content, input_row=input_row, followup_content=followup_content), unsafe_allow_html=True)
